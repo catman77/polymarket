@@ -1,19 +1,19 @@
-"""Expert agent implementations for multi-expert trading system."""
+"""Agent system for multi-expert trading decisions."""
 
-from .base_agent import Vote, AgentPerformance, BaseAgent, VetoAgent
+from .base_agent import BaseAgent, VetoAgent, Vote
 from .tech_agent import TechAgent
-from .risk_agent import RiskAgent, Position
+from .risk_agent import RiskAgent
 from .sentiment_agent import SentimentAgent
 from .regime_agent import RegimeAgent
+from .candle_agent import CandlestickAgent
 
 __all__ = [
-    'Vote',
-    'AgentPerformance',
     'BaseAgent',
     'VetoAgent',
+    'Vote',
     'TechAgent',
     'RiskAgent',
-    'Position',
     'SentimentAgent',
-    'RegimeAgent'
+    'RegimeAgent',
+    'CandlestickAgent',
 ]
