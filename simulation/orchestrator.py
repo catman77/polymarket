@@ -7,6 +7,7 @@ Broadcasts market data to all strategies, tracks outcomes, generates comparison 
 """
 
 import sys
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -15,6 +16,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 from .shadow_strategy import ShadowStrategy
 from .strategy_configs import StrategyConfig
 from .trade_journal import TradeJournalDB
+
+log = logging.getLogger(__name__)
 
 
 class SimulationOrchestrator:
@@ -296,7 +299,7 @@ class SimulationOrchestrator:
                 # Only restore positions that haven't expired yet
                 # (Give 30 minutes window for resolution)
                 if (current_time - epoch) > 1800:  # 30 minutes
-                    print(f"  ⚠️  Skipping expired position: {strategy_name} {crypto} epoch {epoch} ({(current_time - epoch)//60} min old)")
+                    log.info(f"[Shadow Restore] Skipping expired position: {strategy_name} {crypto} epoch {epoch} ({(current_time - epoch)//60} min old)")
                     continue
 
                 # Reconstruct position
@@ -332,15 +335,15 @@ class SimulationOrchestrator:
                 restored_count += 1
 
             if restored_count > 0:
-                print(f"\n✅ Restored {restored_count} unresolved positions from database")
+                log.info(f"[Shadow Restore] ✅ Restored {restored_count} unresolved positions from database")
                 for name, strategy in self.strategies.items():
                     if strategy.positions:
-                        print(f"  • {name}: {len(strategy.positions)} open positions")
+                        log.info(f"[Shadow Restore]   • {name}: {len(strategy.positions)} open positions")
             else:
-                print(f"\n✅ No unresolved positions to restore")
+                log.info(f"[Shadow Restore] ✅ No unresolved positions to restore")
 
         except Exception as e:
-            print(f"⚠️  Failed to restore positions from database: {e}")
+            log.error(f"[Shadow Restore] Failed to restore positions from database: {e}")
             import traceback
             traceback.print_exc()
 
