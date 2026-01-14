@@ -8,6 +8,7 @@ Tracks virtual positions, balance, and performance for strategy comparison.
 
 import sys
 import time
+import random
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -150,22 +151,31 @@ class ShadowStrategy:
         strategy_data = market_data.copy()
         strategy_data['balance'] = self.balance
         strategy_data['positions'] = []  # Shadow has no real positions
-        
-        # Get decision from agent system
-        should_trade, direction, confidence, reason, weighted_score = \
-            self.agent_system.make_decision(
-                crypto=crypto,
-                epoch=epoch,
-                prices=strategy_data['prices'],
-                orderbook=strategy_data['orderbook'],
-                positions=[],  # Virtual positions don't block trades
-                balance=self.balance,
-                time_in_epoch=strategy_data.get('time_in_epoch', 0),
-                rsi=strategy_data.get('rsi', 50.0),
-                regime=strategy_data.get('regime', 'unknown'),
-                mode='normal'  # Always use normal mode for shadows
-            )
-        
+
+        # SPECIAL CASE: Random baseline (coin flip)
+        if self.name == 'random_baseline':
+            # True 50/50 random decision (ignores all agents)
+            should_trade = True  # Always trade for maximum sample size
+            direction = random.choice(['Up', 'Down'])  # Coin flip
+            confidence = 0.50  # Coin flip = 50% confidence
+            reason = f"Random coin flip: {direction}"
+            weighted_score = 0.50
+        else:
+            # Get decision from agent system
+            should_trade, direction, confidence, reason, weighted_score = \
+                self.agent_system.make_decision(
+                    crypto=crypto,
+                    epoch=epoch,
+                    prices=strategy_data['prices'],
+                    orderbook=strategy_data['orderbook'],
+                    positions=[],  # Virtual positions don't block trades
+                    balance=self.balance,
+                    time_in_epoch=strategy_data.get('time_in_epoch', 0),
+                    rsi=strategy_data.get('rsi', 50.0),
+                    regime=strategy_data.get('regime', 'unknown'),
+                    mode='normal'  # Always use normal mode for shadows
+                )
+
         return {
             'strategy': self.name,
             'crypto': crypto,
