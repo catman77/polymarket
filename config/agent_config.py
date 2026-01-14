@@ -13,8 +13,8 @@ Controls behavior of the multi-expert consensus trading system.
 AGENT_SYSTEM_ENABLED = False  # Set True to enable agent decisions, False for log-only
 
 # Consensus requirements
-CONSENSUS_THRESHOLD = 0.65     # Minimum weighted score to trade (0.60-0.80)
-MIN_CONFIDENCE = 0.50          # Minimum average confidence (0.40-0.60)
+CONSENSUS_THRESHOLD = 0.40     # Minimum weighted score to trade (lowered from 0.65 to allow trading)
+MIN_CONFIDENCE = 0.40          # Minimum average confidence (lowered from 0.50)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
 # Agent weights (base multipliers, will be adjusted by performance)
