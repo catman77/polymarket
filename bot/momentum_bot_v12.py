@@ -1420,36 +1420,50 @@ def get_clob_client() -> ClobClient:
 
 
 def get_current_market(crypto: str) -> Optional[Dict]:
-    epoch = (int(time.time()) // 900) * 900
-    slug = f"{crypto}-updown-15m-{epoch}"
+    # Try multiple timeframes (Polymarket changed from 15min to 4hour markets)
+    # Epoch calculations:
+    # 15min: 900 seconds
+    # 4hour: 14400 seconds (4 * 60 * 60)
 
-    try:
-        resp = requests.get(f"https://gamma-api.polymarket.com/events?slug={slug}", timeout=5)
-        if resp.status_code != 200 or not resp.json():
-            return None
+    timeframes = [
+        (900, "15m"),    # 15-minute markets (if they return)
+        (14400, "4h"),   # 4-hour markets (current)
+    ]
 
-        event = resp.json()[0]
-        markets = event.get("markets", [])
-        if not markets:
-            return None
+    for interval, suffix in timeframes:
+        epoch = (int(time.time()) // interval) * interval
+        slug = f"{crypto}-updown-{suffix}-{epoch}"
 
-        cid = markets[0].get("conditionId")
-        clob = requests.get(f"https://clob.polymarket.com/markets/{cid}", timeout=5)
-        if clob.status_code != 200:
-            return None
+        try:
+            resp = requests.get(f"https://gamma-api.polymarket.com/events?slug={slug}", timeout=5)
+            if resp.status_code != 200 or not resp.json():
+                continue  # Try next timeframe
 
-        data = clob.json()
-        if not data.get("accepting_orders"):
-            return None
+            event = resp.json()[0]
+            markets = event.get("markets", [])
+            if not markets:
+                continue
 
-        return {
-            "title": event.get("title"),
-            "condition_id": cid,
-            "tokens": data.get("tokens", []),
-            "epoch": epoch,
-        }
-    except:
-        return None
+            cid = markets[0].get("conditionId")
+            clob = requests.get(f"https://clob.polymarket.com/markets/{cid}", timeout=5)
+            if clob.status_code != 200:
+                continue
+
+            data = clob.json()
+            if not data.get("accepting_orders"):
+                continue
+
+            return {
+                "title": event.get("title"),
+                "condition_id": cid,
+                "tokens": data.get("tokens", []),
+                "epoch": epoch,
+                "timeframe": suffix,  # Track which timeframe we're trading
+            }
+        except:
+            continue  # Try next timeframe
+
+    return None  # No markets found in any timeframe
 
 
 def get_market_prices(tokens: List[Dict]) -> Dict[str, Dict]:
