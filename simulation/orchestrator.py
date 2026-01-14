@@ -296,10 +296,9 @@ class SimulationOrchestrator:
                 if strategy_name not in self.strategies:
                     continue
 
-                # Only restore positions that haven't expired yet
-                # (Give 30 minutes window for resolution)
-                if (current_time - epoch) > 1800:  # 30 minutes
-                    log.info(f"[Shadow Restore] Skipping expired position: {strategy_name} {crypto} epoch {epoch} ({(current_time - epoch)//60} min old)")
+                # Skip VERY old positions (> 2 hours) - likely from old sessions
+                if (current_time - epoch) > 7200:  # 2 hours
+                    log.info(f"[Shadow Restore] Skipping very old position: {strategy_name} {crypto} epoch {epoch} ({(current_time - epoch)//60} min old)")
                     continue
 
                 # Reconstruct position
