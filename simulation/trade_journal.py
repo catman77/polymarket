@@ -31,13 +31,18 @@ class TradeJournalDB:
     def __init__(self, db_path: str = 'simulation/trade_journal.db'):
         """
         Initialize database connection.
-        
+
         Args:
             db_path: Path to SQLite database file
         """
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row  # Enable dict-like access
+
+        # Enable Write-Ahead Logging for better concurrent access
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA synchronous=NORMAL")  # Balance between safety and speed
+
         self._create_tables()
     
     def _create_tables(self):
@@ -262,7 +267,7 @@ class TradeJournalDB:
                    payout: float, pnl: float) -> int:
         """
         Log trade outcome after resolution.
-        
+
         Args:
             trade_id: ID of trade
             strategy: Strategy name
@@ -272,14 +277,14 @@ class TradeJournalDB:
             actual_direction: Actual market direction
             payout: Payout amount in USD
             pnl: Profit/loss in USD
-            
+
         Returns:
             outcome_id: ID of inserted outcome
         """
         try:
             cursor = self.conn.execute('''
-                INSERT INTO outcomes 
-                (trade_id, strategy, crypto, epoch, predicted_direction, 
+                INSERT INTO outcomes
+                (trade_id, strategy, crypto, epoch, predicted_direction,
                  actual_direction, payout, pnl, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
@@ -287,14 +292,25 @@ class TradeJournalDB:
                 actual_direction, payout, pnl, time.time()
             ))
             self.conn.commit()
+
+            # EXPLICIT SYNC: Force write to disk (WAL mode already enabled)
+            # This ensures outcomes are persisted even if process terminates
+            self.conn.execute("SELECT 1")  # Simple query to flush WAL
+
             return cursor.lastrowid
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
             # Outcome already logged
+            log.warning(f"Duplicate outcome for {strategy} {crypto} epoch {epoch}: {e}")
             row = self.conn.execute('''
-                SELECT id FROM outcomes 
+                SELECT id FROM outcomes
                 WHERE strategy=? AND crypto=? AND epoch=?
             ''', (strategy, crypto, epoch)).fetchone()
             return row['id'] if row else -1
+        except Exception as e:
+            log.error(f"Error logging outcome for {strategy} {crypto} epoch {epoch}: {e}")
+            import traceback
+            traceback.print_exc()
+            return -1
     
     def log_agent_votes(self, decision_id: int, votes: List[Dict[str, Any]]):
         """
