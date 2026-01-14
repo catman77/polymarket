@@ -72,7 +72,7 @@ class CandlestickAgent(BaseAgent):
             # Neutral on error
             return Vote(
                 agent_name=self.name,
-                direction="Neutral",
+                direction="Up",  # Default to Up on error/uncertainty
                 confidence=0.0,
                 quality=0.0,
                 reasoning=f"Error: {e}"
@@ -193,19 +193,20 @@ class CandlestickAgent(BaseAgent):
            - Contrarian opportunity
         """
         
-        direction = "Neutral"
-        confidence = 0.0
+        # CRITICAL: Default direction (will be overridden if strong signal found)
+        direction = "Up"  # Default bias
+        confidence = 0.20  # Low default confidence
         quality = 0.5
         reasoning = []
-        
+
         time_in_epoch = data.get('time_in_epoch', 0)
-        
+
         # Only analyze if early in epoch (first 5 minutes)
         # After that, candle position is stale
         if time_in_epoch > 300:
             return Vote(
                 agent_name=self.name,
-                direction="Neutral",
+                direction="Up",  # Default to Up on error/uncertainty
                 confidence=0.0,
                 quality=0.3,
                 reasoning="Too late in epoch for candle analysis"
