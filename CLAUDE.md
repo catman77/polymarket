@@ -20,10 +20,12 @@ The bot uses a **contrarian fade + momentum confirmation** approach:
 
 ### Current Performance
 
-- **Live Balance:** $7.21 (as of Jan 14, 2026)
+- **Live Balance:** $21.52 (as of Jan 14, 2026 14:35 UTC)
 - **Peak Balance:** $161.99 (Jan 13, 2026)
-- **Recent Event:** -95% drawdown from trend filter bias (fixed Jan 14)
-- **Current Status:** Live trading with fixed trend filter
+- **Recent Events:**
+  - Jan 14 AM: -95% drawdown from trend filter bias (fixed 14:00 UTC)
+  - Jan 14 PM: +$25 deposit, then -$10.69 loss from 2 contrarian DOWN trades (-33% drawdown)
+- **Current Status:** Live trading with fixed trend filter, reset to $21.52 baseline
 - **Trading Since:** January 2026
 - **Deployment:** Vultr VPS (Mexico City) - 24/7 operation
 
@@ -678,6 +680,45 @@ else:
 - Win rate should improve from ~5% to 50-60%
 
 **Status:** Fixed and deployed Jan 14, 2026 14:00 UTC
+
+**Post-Fix Testing Results (Jan 14, 2026 14:00-14:30 UTC):**
+- Two DOWN positions placed before restart resolved as losses (BTC Down, ETH Down)
+- Both positions showed mean reversion (improved from 3.5% → 14% probability mid-epoch)
+- But BULL momentum continued through epoch end → both finished at $0.00
+- Loss: $10.69 on $32.21 balance (33.2% drawdown → auto-halt)
+- **Key Learning:** In strong BULL markets, contrarian DOWN bets are high-risk even with mean reversion signals
+
+**Important Insights:**
+
+1. **Directional Bias in Trending Markets is Expected**
+   - After fix: Bot still showing UP-heavy decisions (not 50/50)
+   - This is CORRECT behavior in BULL regime - agents should vote UP more often
+   - Expecting 40-60% split only makes sense in NEUTRAL markets
+   - In strong trends: 60-75% bias toward trend direction is normal and healthy
+
+2. **Contrarian Strategy Risk**
+   - Contrarian fade works best in CHOPPY markets (mean reversion completes)
+   - In strong trends (BULL/BEAR), contrarian bets fight the momentum
+   - The two DOWN bets showed this: mean reversion started but incomplete
+   - **Recommendation:** Increase consensus threshold for contrarian trades in strong regime
+
+3. **Binary Market Resolution is Unforgiving**
+   - Position can improve from 3.5% → 14% (4x better) but still lose completely
+   - "Close" doesn't count - price must finish on correct side of start price
+   - This makes timing and epoch boundary analysis critical
+
+4. **Peak Balance Tracking Still Needs Improvement**
+   - After deposit: peak set to $32.21
+   - Open positions lost → balance dropped to $21.52
+   - Bot halted again (33.2% drawdown)
+   - **Issue:** Peak doesn't account for open position risk
+   - **Workaround:** Reset peak manually after losses or use realized-only tracking
+
+**Monitoring Checklist:**
+- [ ] Directional balance: Should match regime (60-75% in BULL, 40-60% in NEUTRAL)
+- [ ] Win rate: Target 55-65% (accounting for fees)
+- [ ] Contrarian trades: Should have >60% consensus in strong trends
+- [ ] Peak balance: Reset manually after large losses to prevent false halts
 
 ---
 
