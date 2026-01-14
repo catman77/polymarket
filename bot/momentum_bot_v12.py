@@ -1695,6 +1695,127 @@ def run_bot():
                     log.info(f"\n=== [{crypto.upper()}] {market['title']} ===")
 
                 # =================================================================
+                # AGENT MODE - Expert consensus decision-making (ENABLED = agents control)
+                # =================================================================
+                if agent_system and agent_system.enabled:
+                    # Get market prices for agent analysis
+                    prices = get_market_prices(market.get("tokens", []))
+                    if "Up" not in prices or "Down" not in prices:
+                        continue
+
+                    # Get RSI for agent analysis
+                    rsi_value = rsi_calc.get_rsi(crypto)
+
+                    # Ask agents to make decision
+                    try:
+                        agent_should_trade, direction, confidence, reason = agent_system.make_decision(
+                            crypto=crypto,
+                            epoch=current_epoch,
+                            prices={
+                                'btc': price_feed.latest_prices.get('btc', 0),
+                                'eth': price_feed.latest_prices.get('eth', 0),
+                                'sol': price_feed.latest_prices.get('sol', 0),
+                                'xrp': price_feed.latest_prices.get('xrp', 0)
+                            },
+                            orderbook={
+                                'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
+                                'no': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
+                            },
+                            positions=guardian.open_positions,
+                            balance=state.current_balance,
+                            time_in_epoch=time_in_epoch,
+                            rsi=rsi_value,
+                            regime=tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
+                            mode=state.mode
+                        )
+
+                        # If agents say SKIP, continue to next crypto
+                        if not agent_should_trade:
+                            log.info(f"  [{crypto.upper()}] 🤖 AGENTS SKIP: {reason}")
+                            continue
+
+                        # Agents said TRADE - set up the order
+                        log.info(f"  [{crypto.upper()}] 🤖 AGENTS TRADE {direction.upper()}: {confidence:.0%} confidence")
+                        log.info(f"     Reason: {reason}")
+
+                        # Get entry price and token from agent decision
+                        if direction == "Up":
+                            entry_price = prices["Up"]["ask"]
+                            token_id = prices["Up"]["token_id"]
+                        else:
+                            entry_price = prices["Down"]["ask"]
+                            token_id = prices["Down"]["token_id"]
+
+                        # Use agent-provided confidence as signal strength
+                        signal_strength = confidence
+                        strategy = "agent_consensus"
+
+                        # Calculate position size using agent system
+                        size = agent_system.get_position_size(
+                            confidence=confidence,
+                            balance=state.current_balance,
+                            consecutive_losses=state.consecutive_losses
+                        )
+
+                        # Verify with Guardian (risk checks)
+                        can_open, block_reason = guardian.can_open_position(
+                            crypto=crypto,
+                            direction=direction,
+                            size=size,
+                            entry_price=entry_price,
+                            balance=state.current_balance,
+                            mode=state.mode
+                        )
+
+                        if not can_open:
+                            log.warning(f"  [{crypto.upper()}] BLOCKED: {block_reason}")
+                            continue
+
+                        # Calculate shares
+                        shares = int(size / entry_price)
+                        if shares < 1:
+                            log.warning(f"  [{crypto.upper()}] Size too small for 1 share")
+                            continue
+
+                        # Log the trade details
+                        log.info(f"\n*** [{crypto.upper()}] AGENT DECISION: {direction} ***")
+                        log.info(f"  Confidence: {confidence:.0%} | Strategy: {strategy}")
+                        log.info(f"  Entry: ${entry_price:.2f} | Size: ${size:.2f} ({shares} shares)")
+                        log.info(f"  Mode: {state.mode} | Losses: {state.consecutive_losses}")
+
+                        # Place the order
+                        result = place_order(client, token_id, shares, entry_price)
+
+                        if result:
+                            log.info(f"  ORDER PLACED: {result.get('status')}")
+                            epoch_trades[crypto][current_epoch].append(result)
+
+                            # Track position
+                            position_data = {
+                                "crypto": crypto,
+                                "direction": direction,
+                                "entry_price": entry_price,
+                                "size": size,
+                                "shares": shares,
+                                "strategy": strategy,
+                                "confidence": confidence,
+                                "epoch": current_epoch,
+                                "token_id": token_id
+                            }
+                            guardian.add_position(result.get("order_id"), position_data)
+                        else:
+                            log.error(f"  ORDER FAILED")
+
+                        # Continue to next crypto (skip old bot logic)
+                        continue
+
+                    except Exception as e:
+                        log.error(f"  Agent decision failed: {e}")
+                        import traceback
+                        log.error(f"  Traceback: {traceback.format_exc()}")
+                        # Fall through to old bot logic if agents fail
+
+                # =================================================================
                 # LATE ONLY MODE - Simplified path, no confluence/trend needed
                 # =================================================================
                 if LATE_ONLY_MODE:
