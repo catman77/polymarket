@@ -10,8 +10,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from agents import TechAgent, RiskAgent, SentimentAgent, RegimeAgent
-# CandlestickAgent temporarily disabled due to voting issues
+from agents import TechAgent, RiskAgent, SentimentAgent, RegimeAgent, CandlestickAgent
 from coordinator import DecisionEngine
 from config import agent_config
 import logging
@@ -85,13 +84,12 @@ class AgentSystemWrapper:
         self.tech_agent = TechAgent(name="TechAgent", weight=1.0)
         self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=1.0)
         self.regime_agent = RegimeAgent(name="RegimeAgent", weight=1.0)
-        # TEMPORARILY DISABLED: CandlestickAgent has voting issues
-        # self.candle_agent = CandlestickAgent()
+        self.candle_agent = CandlestickAgent(name="CandlestickAgent", weight=1.0)
         self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
 
-        # Initialize decision engine with 3 expert agents (Candle disabled)
+        # Initialize decision engine with 4 expert agents
         self.engine = DecisionEngine(
-            agents=[self.tech_agent, self.sentiment_agent, self.regime_agent],
+            agents=[self.tech_agent, self.sentiment_agent, self.regime_agent, self.candle_agent],
             veto_agents=[self.risk_agent],
             consensus_threshold=consensus_threshold,
             min_confidence=min_confidence,
@@ -99,13 +97,12 @@ class AgentSystemWrapper:
         )
 
         log.info("=" * 60)
-        log.info("AGENT SYSTEM INITIALIZED - 3 AGENTS")
+        log.info("AGENT SYSTEM INITIALIZED - 4 AGENTS")
         log.info(f"  Mode: {'ENABLED' if enabled else 'LOG-ONLY'}")
         log.info(f"  Consensus Threshold: {consensus_threshold}")
         log.info(f"  Min Confidence: {min_confidence}")
         log.info(f"  Adaptive Weights: {adaptive_weights}")
-        log.info(f"  Agents: Tech, Sentiment, Regime (+ Risk veto)")
-        log.info(f"  ⚠️  CandlestickAgent temporarily disabled")
+        log.info(f"  Agents: Tech, Sentiment, Regime, Candlestick (+ Risk veto)")
         log.info("=" * 60)
 
     def make_decision(self,
