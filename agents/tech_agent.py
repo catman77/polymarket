@@ -301,14 +301,28 @@ class TechAgent(BaseAgent):
         direction, agreeing_count, avg_change, exchange_signals = \
             self.price_feed.get_confluence_signal(crypto)
 
-        # If no clear direction, return Neutral
+        # CRITICAL FIX: If no clear direction, pick based on majority
         if direction is None:
+            # Count Up vs Down from exchange signals
+            up_count = sum(1 for sig in exchange_signals.values() if sig == "Up")
+            down_count = sum(1 for sig in exchange_signals.values() if sig == "Down")
+
+            # Pick majority direction, default to Up on tie
+            if up_count > down_count:
+                direction = "Up"
+            elif down_count > up_count:
+                direction = "Down"
+            else:
+                # Tie - use avg_change as tiebreaker
+                direction = "Up" if avg_change >= 0 else "Down"
+
+            # Low confidence since no confluence
             return Vote(
-                direction="Neutral",
-                confidence=0.0,
-                quality=0.3,
+                direction=direction,  # ALWAYS pick Up or Down
+                confidence=0.20,  # Low but not zero
+                quality=0.4,
                 agent_name=self.name,
-                reasoning=f"No confluence: only {agreeing_count} exchanges agreeing",
+                reasoning=f"Weak signal: {up_count}Up/{down_count}Down, avg {avg_change:+.2%} → {direction}",
                 details={
                     'agreeing_count': agreeing_count,
                     'avg_change': avg_change,

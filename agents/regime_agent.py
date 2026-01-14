@@ -95,9 +95,39 @@ class RegimeAgent(BaseAgent):
             f"adjusting weights for regime"
         )
 
+        # CRITICAL FIX: Always pick a direction based on regime
+        # Get this crypto's trend from details
+        crypto_details = regime_data.get('crypto_details', {})
+        crypto_trend = crypto_details.get(crypto, {})
+        mean_return = crypto_trend.get('mean_return', 0.0)
+
+        # Pick direction based on trend
+        if mean_return > 0.001:  # Positive trend > 0.1%
+            direction = "Up"
+        elif mean_return < -0.001:  # Negative trend < -0.1%
+            direction = "Down"
+        else:
+            # Sideways - pick based on overall regime
+            if self.current_regime in ['bull_momentum']:
+                direction = "Up"
+            elif self.current_regime in ['bear_momentum']:
+                direction = "Down"
+            else:
+                # True sideways - low confidence but pick Up by default
+                direction = "Up"
+
+        # Adjust confidence based on regime clarity
+        vote_confidence = confidence * 0.3  # Lower confidence since regime is slow
+
+        reasoning = (
+            f"Regime: {self.current_regime} ({confidence:.0%}), "
+            f"{crypto} trend: {mean_return*100:+.2f}% → {direction}, "
+            f"volatility: {self.avg_volatility*100:.2f}%"
+        )
+
         return Vote(
-            direction="Neutral",  # Regime agent doesn't predict direction
-            confidence=confidence,
+            direction=direction,  # ALWAYS pick Up or Down
+            confidence=vote_confidence,
             quality=quality,
             agent_name=self.name,
             reasoning=reasoning,

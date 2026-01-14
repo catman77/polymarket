@@ -72,12 +72,13 @@ class SentimentAgent(BaseAgent):
         rsi = data.get('rsi', 50.0)
 
         if not orderbook:
+            # CRITICAL FIX: No orderbook - default to Up with low confidence
             return Vote(
-                direction="Neutral",
-                confidence=0.0,
-                quality=0.0,
+                direction="Up",  # Default when no data
+                confidence=0.15,
+                quality=0.2,
                 agent_name=self.name,
-                reasoning="No orderbook data available",
+                reasoning="No orderbook → defaulting to Up",
                 details={}
             )
 
@@ -97,12 +98,21 @@ class SentimentAgent(BaseAgent):
         )
 
         if contrarian_signal is None:
+            # CRITICAL FIX: No contrarian signal - pick based on value
+            # Cheaper side has better value (even if not extreme)
+            if down_price < up_price:
+                direction = "Down"
+                reasoning = f"Down cheaper (${down_price:.2f} vs ${up_price:.2f})"
+            else:
+                direction = "Up"
+                reasoning = f"Up cheaper (${up_price:.2f} vs ${down_price:.2f})"
+
             return Vote(
-                direction="Neutral",
-                confidence=0.0,
-                quality=0.3,
+                direction=direction,  # ALWAYS pick Up or Down
+                confidence=0.25,  # Low but not zero
+                quality=0.4,
                 agent_name=self.name,
-                reasoning="No contrarian opportunity (prices not extreme enough)",
+                reasoning=reasoning,
                 details={
                     'up_price': up_price,
                     'down_price': down_price,
