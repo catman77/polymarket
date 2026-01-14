@@ -132,6 +132,7 @@ TREND_FILTER_ENABLED = True         # Enable trend-based filtering
 MIN_TREND_SCORE = 0.25              # Minimum |trend_score| to trade (0-1 scale)
 REQUIRE_MAJOR_ALIGNMENT = False     # Require Daily+Weekly alignment (stricter)
 CHOPPY_MARKET_THRESHOLD = 0.15      # Below this = choppy, skip trading
+STRONG_TREND_THRESHOLD = 1.0        # Only apply directional filter if |trend_score| > this (prevents weak trend bias)
 # When enabled, bot will:
 # - Only trade Up when trend_score > MIN_TREND_SCORE
 # - Only trade Down when trend_score < -MIN_TREND_SCORE
@@ -2043,17 +2044,24 @@ def run_bot():
                                 conditions = tf_tracker.get_market_conditions(crypto)
                                 trend_score = conditions.trend_score
 
+                                # Skip choppy markets entirely
                                 if abs(trend_score) < CHOPPY_MARKET_THRESHOLD:
                                     if int(time.time()) % 60 < 2:
                                         log.info(f"  [{crypto.upper()}] SKIP: Choppy market (trend={trend_score:.2f})")
                                     continue
 
-                                if direction == "Up" and trend_score < MIN_TREND_SCORE:
-                                    log.info(f"  [{crypto.upper()}] SKIP Up: Weak/negative trend ({trend_score:.2f})")
-                                    continue
-                                if direction == "Down" and trend_score > -MIN_TREND_SCORE:
-                                    log.info(f"  [{crypto.upper()}] SKIP Down: Weak/positive trend ({trend_score:.2f})")
-                                    continue
+                                # Only apply directional filter for STRONG trends (prevents weak trend bias)
+                                if abs(trend_score) >= STRONG_TREND_THRESHOLD:
+                                    if direction == "Up" and trend_score < MIN_TREND_SCORE:
+                                        log.info(f"  [{crypto.upper()}] SKIP Up: Weak/negative trend ({trend_score:.2f})")
+                                        continue
+                                    if direction == "Down" and trend_score > -MIN_TREND_SCORE:
+                                        log.info(f"  [{crypto.upper()}] SKIP Down: Weak/positive trend ({trend_score:.2f})")
+                                        continue
+                                else:
+                                    # Weak trend (0.15-1.0) - allow both directions to prevent bias
+                                    if int(time.time()) % 60 < 2:
+                                        log.info(f"  [{crypto.upper()}] WEAK TREND ({trend_score:.2f}) - allowing both directions")
 
                             except Exception as e:
                                 log.warning(f"Trend filter error for {crypto}: {e}")
