@@ -18,7 +18,13 @@ WALLET = "0x52dF6Dc5DE31DD844d9E432A0821BC86924C2237"
 STATE_DIR = "/opt/polymarket-autotrader/v12_state"
 LOG_FILE = "/opt/polymarket-autotrader/bot.log"
 
+# Display Configuration
 REFRESH_INTERVAL = 5  # seconds
+MAX_ACTIVE_POSITIONS = 5   # Max active positions to show
+MAX_LOSING_SUMMARY = 3     # Max losing position types to show
+MAX_RECENT_DECISIONS = 6   # Max recent decisions to show
+MAX_RECENT_TRADES = 4      # Max recent trades to show
+MARKET_NAME_LENGTH = 40    # Max chars for market name
 
 # Set TERM to prevent errors
 if 'TERM' not in os.environ:
@@ -163,7 +169,7 @@ def get_recent_trades_with_confidence():
                     trades.append({'confidence': confidence, 'line': line})
             i += 1
 
-        return trades[-5:]  # Last 5 trades
+        return trades[-MAX_RECENT_TRADES:]
     except:
         return []
 
@@ -242,7 +248,7 @@ def run_dashboard():
 
                 if active:
                     print(f"│ \033[92mACTIVE ({len(active)} positions with value):\033[0m")
-                    for p in active[:8]:
+                    for p in active[:MAX_ACTIVE_POSITIONS]:
                         crypto = p['crypto']
                         outcome = p.get('outcome', '?')
                         size = float(p.get('size', 0))
@@ -257,9 +263,9 @@ def run_dashboard():
                         if ' - ' in market:
                             parts = market.split(' - ')
                             if len(parts) >= 2:
-                                market_short = parts[-1][:45]  # Last part (time range)
+                                market_short = parts[-1][:MARKET_NAME_LENGTH]  # Last part (time range)
                         else:
-                            market_short = market[:45]
+                            market_short = market[:MARKET_NAME_LENGTH]
 
                         status_icon = "📈" if pnl > 0 else "📉"
                         print(f"│   {status_icon} {crypto:>3} {outcome:>4}: {market_short}")
@@ -278,7 +284,7 @@ def run_dashboard():
                         key = f"{crypto} {outcome}"
                         crypto_counts[key] = crypto_counts.get(key, 0) + 1
 
-                    for key, count in sorted(crypto_counts.items())[:5]:
+                    for key, count in sorted(crypto_counts.items())[:MAX_LOSING_SUMMARY]:
                         print(f"│   ❌ {key}: {count} position(s)")
             else:
                 print("│ Unable to fetch positions")
@@ -291,7 +297,7 @@ def run_dashboard():
 
             decisions = get_recent_agent_decisions()
             if decisions:
-                for decision in decisions[-8:]:  # Last 8 decisions
+                for decision in decisions[-MAX_RECENT_DECISIONS:]:
                     # Clean up log timestamp
                     if ' - ' in decision:
                         decision = decision.split(' - ', 1)[1]
