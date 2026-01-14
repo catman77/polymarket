@@ -1787,10 +1787,10 @@ def run_bot():
                                 crypto=crypto,
                                 epoch=current_epoch,
                                 prices={
-                                    'btc': price_feed.latest_prices.get('btc', 0),
-                                    'eth': price_feed.latest_prices.get('eth', 0),
-                                    'sol': price_feed.latest_prices.get('sol', 0),
-                                    'xrp': price_feed.latest_prices.get('xrp', 0)
+                                    'btc': price_feed.current_prices.get('btc', 0),
+                                    'eth': price_feed.current_prices.get('eth', 0),
+                                    'sol': price_feed.current_prices.get('sol', 0),
+                                    'xrp': price_feed.current_prices.get('xrp', 0)
                                 },
                                 orderbook={
                                     'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
@@ -2126,10 +2126,10 @@ def run_bot():
                             crypto=crypto,
                             epoch=current_epoch,
                             prices={
-                                'btc': price_feed.latest_prices.get('btc', 0),
-                                'eth': price_feed.latest_prices.get('eth', 0),
-                                'sol': price_feed.latest_prices.get('sol', 0),
-                                'xrp': price_feed.latest_prices.get('xrp', 0)
+                                'btc': price_feed.current_prices.get('btc', 0),
+                                'eth': price_feed.current_prices.get('eth', 0),
+                                'sol': price_feed.current_prices.get('sol', 0),
+                                'xrp': price_feed.current_prices.get('xrp', 0)
                             },
                             orderbook={
                                 'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
