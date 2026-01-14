@@ -481,10 +481,14 @@ class Guardian:
             return True, "Manual HALT file exists"
 
         if self.state.peak_balance > 0:
-            cash_balance = get_usdc_balance()  # FIX: Use cash only, not position estimates
-            drawdown = (self.state.peak_balance - cash_balance) / self.state.peak_balance
+            # Include cash + pending redemptions (winning positions at ~100%)
+            cash_balance = get_usdc_balance()
+            redeemable_value = self.get_redeemable_value()
+            effective_balance = cash_balance + redeemable_value
+
+            drawdown = (self.state.peak_balance - effective_balance) / self.state.peak_balance
             if drawdown > MAX_DRAWDOWN_PCT:
-                return True, f"Drawdown {drawdown*100:.1f}% exceeds {MAX_DRAWDOWN_PCT*100}% (peak ${self.state.peak_balance:.2f} -> ${cash_balance:.2f})"
+                return True, f"Drawdown {drawdown*100:.1f}% exceeds {MAX_DRAWDOWN_PCT*100}% (peak ${self.state.peak_balance:.2f} -> ${effective_balance:.2f} [${cash_balance:.2f} cash + ${redeemable_value:.2f} redeemable])"
 
         if self.state.consecutive_losses >= 5:
             return True, "5 consecutive losses - manual review needed"
@@ -513,11 +517,42 @@ class Guardian:
             log.error(f"Error getting position value: {e}")
             return 0
 
+    def get_redeemable_value(self) -> float:
+        """Get value of winning positions pending redemption."""
+        try:
+            resp = requests.get(
+                "https://data-api.polymarket.com/positions",
+                params={"user": EOA, "limit": 50},
+                timeout=10
+            )
+            if resp.status_code != 200:
+                return 0
+
+            positions = resp.json()
+            redeemable_value = 0
+            for pos in positions:
+                size = float(pos.get('size', 0))
+                if size < 0.01:
+                    continue
+
+                cur_price = float(pos.get('curPrice', 0))
+                current_value = size * cur_price
+
+                # Count as redeemable if marked redeemable OR at 99%+ AND value >= $1
+                if (pos.get('redeemable', False) or cur_price >= 0.99) and current_value >= 1.0:
+                    redeemable_value += current_value
+
+            return redeemable_value
+        except Exception as e:
+            log.error(f"Error getting redeemable value: {e}")
+            return 0
+
     def get_portfolio_value(self) -> float:
-        """Get total portfolio value (cash + positions)."""
+        """Get total portfolio value (cash + positions + pending redemptions)."""
         cash = get_usdc_balance()
         positions_value = self.get_open_positions_value()
-        return cash + positions_value
+        redeemable_value = self.get_redeemable_value()
+        return cash + positions_value + redeemable_value
 
     def check_daily_limit(self) -> Tuple[bool, str]:
         """Check if daily loss limit reached."""
