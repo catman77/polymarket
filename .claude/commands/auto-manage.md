@@ -157,7 +157,7 @@ Automatically detects critical events and spawns specialized agents to handle th
 
 ```bash
 # Run continuously (production)
-nohup python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py > orchestrator.log 2>&1 &
+nohup venv/bin/python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py > orchestrator.log 2>&1 &
 echo $! > orchestrator.pid
 ```
 
@@ -165,14 +165,14 @@ echo $! > orchestrator.pid
 
 ```bash
 # Run single scan
-python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py --once
+venv/bin/python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py --once
 ```
 
 ### View Status
 
 ```bash
 # Check orchestrator status
-python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py --status
+venv/bin/python3 .claude/plugins/polymarket-historian/scripts/event_orchestrator.py --status
 
 # View event log
 cat .claude/plugins/polymarket-historian/data/events.json
