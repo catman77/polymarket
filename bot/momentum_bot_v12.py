@@ -1876,7 +1876,7 @@ def run_bot():
                                     "epoch": current_epoch,
                                     "token_id": token_id
                                 }
-                                guardian.add_position(result.get("order_id"), position_data)
+                                # guardian.record_position(position_data)  # Commented - not needed, positions tracked via API
                             else:
                                 log.error(f"  ORDER FAILED")
 
