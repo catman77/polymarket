@@ -58,6 +58,9 @@ class SimulationOrchestrator:
             for name in self.strategies.keys():
                 print(f"  • {name}")
             print("="*80)
+
+            # Restore unresolved positions from database
+            self._restore_open_positions()
         else:
             print("[Shadow Trading] No shadow strategies configured")
     
@@ -254,6 +257,93 @@ class SimulationOrchestrator:
         summaries = [s.get_status_summary() for s in self.strategies.values()]
         return " | ".join(summaries)
     
+    def _restore_open_positions(self):
+        """
+        Restore unresolved positions from database on startup.
+
+        When the bot restarts, all in-memory positions are lost. This method
+        queries the database for trades that haven't been resolved yet and
+        restores them to the shadow strategies' position dictionaries.
+        """
+        try:
+            import time
+            from .shadow_strategy import Position
+
+            current_time = int(time.time())
+
+            # Query all unresolved trades (trades without matching outcomes)
+            cursor = self.db.conn.execute("""
+                SELECT t.strategy, t.crypto, t.epoch, t.entry_price, t.size,
+                       t.shares, t.confidence, t.weighted_score, t.timestamp
+                FROM trades t
+                LEFT JOIN outcomes o ON t.strategy = o.strategy
+                    AND t.crypto = o.crypto
+                    AND t.epoch = o.epoch
+                WHERE o.id IS NULL
+                ORDER BY t.epoch DESC
+            """)
+
+            unresolved_trades = cursor.fetchall()
+            restored_count = 0
+
+            for row in unresolved_trades:
+                strategy_name, crypto, epoch, entry_price, size, shares, confidence, weighted_score, timestamp = row
+
+                # Only restore if strategy exists
+                if strategy_name not in self.strategies:
+                    continue
+
+                # Only restore positions that haven't expired yet
+                # (Give 30 minutes window for resolution)
+                if (current_time - epoch) > 1800:  # 30 minutes
+                    print(f"  ⚠️  Skipping expired position: {strategy_name} {crypto} epoch {epoch} ({(current_time - epoch)//60} min old)")
+                    continue
+
+                # Reconstruct position
+                position = Position(
+                    crypto=crypto,
+                    epoch=epoch,
+                    direction="Up",  # Will be overridden, direction stored in decision table
+                    entry_price=entry_price,
+                    size=size,
+                    shares=shares,
+                    confidence=confidence,
+                    weighted_score=weighted_score,
+                    timestamp=timestamp
+                )
+
+                # Get the actual direction from the decision table
+                cursor2 = self.db.conn.execute("""
+                    SELECT direction FROM decisions
+                    WHERE strategy = ? AND crypto = ? AND epoch = ? AND should_trade = 1
+                    LIMIT 1
+                """, (strategy_name, crypto, epoch))
+                direction_row = cursor2.fetchone()
+                if direction_row:
+                    position.direction = direction_row[0]
+
+                # Restore position to strategy
+                strategy = self.strategies[strategy_name]
+                strategy.positions[crypto] = position
+
+                # Adjust balance (subtract position size)
+                strategy.balance -= size
+
+                restored_count += 1
+
+            if restored_count > 0:
+                print(f"\n✅ Restored {restored_count} unresolved positions from database")
+                for name, strategy in self.strategies.items():
+                    if strategy.positions:
+                        print(f"  • {name}: {len(strategy.positions)} open positions")
+            else:
+                print(f"\n✅ No unresolved positions to restore")
+
+        except Exception as e:
+            print(f"⚠️  Failed to restore positions from database: {e}")
+            import traceback
+            traceback.print_exc()
+
     def close(self):
         """Close database connection."""
         self.db.close()
