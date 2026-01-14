@@ -28,7 +28,7 @@ class AgentSystemWrapper:
 
         # Initialize once at startup
         agent_system = AgentSystemWrapper(
-            consensus_threshold=0.65,
+            consensus_threshold=0.40,
             enabled=True  # Set False for log-only mode
         )
 
