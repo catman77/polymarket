@@ -69,9 +69,20 @@ class RegimeAgent(BaseAgent):
         Returns:
             Vote with Neutral direction but includes weight_adjustments in details
         """
-        # Update price history
-        prices = data.get('prices', {})
-        self._update_price_history(prices)
+        try:
+            # Update price history
+            prices = data.get('prices', {})
+            self._update_price_history(prices)
+        except Exception as e:
+            # If price update fails, return low-confidence Up vote
+            return Vote(
+                direction="Up",
+                confidence=0.15,
+                quality=0.2,
+                agent_name=self.name,
+                reasoning=f"Price history error → defaulting to Up",
+                details={'error': str(e)}
+            )
 
         # Detect regime
         regime_data = self._detect_regime()
@@ -224,8 +235,17 @@ class RegimeAgent(BaseAgent):
             }
 
         # Calculate returns
-        returns = [(prices[i] - prices[i-1]) / prices[i-1]
-                   for i in range(1, len(prices))]
+        try:
+            returns = [(prices[i] - prices[i-1]) / prices[i-1]
+                       for i in range(1, len(prices))]
+        except TypeError as e:
+            # If prices contains non-numeric data, return unknown
+            return {
+                'trend': 'unknown',
+                'strength': 0,
+                'volatility': 0,
+                'mean_return': 0
+            }
 
         # Trend direction
         mean_return = statistics.mean(returns)
