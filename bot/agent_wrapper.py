@@ -220,6 +220,18 @@ class AgentSystemWrapper:
         # Apply confidence scaling
         scaled_size = base_size * scale_multiplier
 
+        # CRITICAL: Ensure minimum bet size ($1.10)
+        # Polymarket rejects orders below this threshold
+        MIN_BET_USD = 1.10
+        if scaled_size < MIN_BET_USD and scaled_size > 0:
+            # If we can't afford minimum, return 0 (skip trade)
+            # Otherwise, use minimum
+            max_pct = 0.10 if balance < 75 else 0.05  # Tier-appropriate max
+            if MIN_BET_USD <= (balance * max_pct):
+                scaled_size = MIN_BET_USD
+            else:
+                scaled_size = 0.0  # Can't afford minimum
+
         return scaled_size
 
     def record_outcome(self,
