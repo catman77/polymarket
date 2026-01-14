@@ -280,3 +280,26 @@ def get_current_config() -> dict:
 
 # Apply current mode on import
 apply_mode(CURRENT_MODE)
+
+# =============================================================================
+# SHADOW TRADING SYSTEM
+# =============================================================================
+
+# Master enable/disable for shadow trading (parallel strategy testing)
+ENABLE_SHADOW_TRADING = True  # Set False to disable simulation system
+
+# Shadow strategies to run in parallel (virtual trading for comparison)
+# Available strategies: conservative, aggressive, contrarian_focused,
+#                      momentum_focused, no_regime_adjustment, equal_weights_static,
+#                      high_confidence_only, low_barrier
+SHADOW_STRATEGIES = [
+    'conservative',           # High thresholds (0.75/0.60) - fewer trades
+    'aggressive',             # Lower thresholds (0.55/0.45) - more trades
+    'contrarian_focused',     # Boost SentimentAgent - fade overpriced
+    'momentum_focused',       # Boost TechAgent - follow confluence
+    'no_regime_adjustment',   # Disable regime weight adjustments
+]
+
+# Shadow trading configuration
+SHADOW_STARTING_BALANCE = 100.0  # Virtual starting balance for each shadow strategy
+SHADOW_DB_PATH = 'simulation/trade_journal.db'  # SQLite database for logging

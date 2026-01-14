@@ -60,6 +60,15 @@ except ImportError:
         AGENT_SYSTEM_AVAILABLE = True
     except ImportError:
         pass  # Will log warning after logger initialization
+
+# Shadow trading system imports
+SHADOW_TRADING_AVAILABLE = False
+try:
+    from simulation import SimulationOrchestrator, STRATEGY_LIBRARY
+    from config import agent_config
+    SHADOW_TRADING_AVAILABLE = True
+except ImportError:
+    pass  # Will log warning after logger initialization
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs
 from py_clob_client.order_builder.constants import BUY, SELL
@@ -1195,42 +1204,72 @@ class AutoRedeemer:
             log.error(f"Redemption error: {e}")
             return False
 
-    def check_and_redeem(self) -> float:
+    def check_and_redeem(self) -> Tuple[float, List[Dict]]:
+        """
+        Check for redeemable positions and redeem them.
+
+        Returns:
+            Tuple of (total_value, resolved_positions)
+            where resolved_positions is a list of dicts with keys:
+                - crypto: str
+                - epoch: int
+                - outcome: str (will be determined later by comparing with open_positions)
+        """
         current_epoch = (int(time.time()) // 900) * 900
 
         if current_epoch == self.last_epoch:
-            return 0
+            return 0, []
 
         time_since = int(time.time()) - current_epoch
         if time_since < 60:
-            return 0
+            return 0, []
 
         self.last_epoch = current_epoch
 
         positions = self.get_redeemable_positions()
         if not positions:
-            return 0
+            return 0, []
 
         log.info(f"Epoch ended - found {len(positions)} redeemable positions")
 
         nonce = self.w3.eth.get_transaction_count(self.account.address)
         redeemed = 0
         total_value = 0
+        resolved_positions = []
 
         for pos in positions:
             condition_id = pos.get('conditionId') or pos.get('condition_id')
             size = float(pos.get('size', 0))
 
+            # Try to extract crypto and epoch from position data
+            # This is a best-effort approach - may need adjustment based on API response
+            market = pos.get('market', {})
+            title = market.get('question', '') or market.get('title', '')
+
+            # Extract crypto from title (e.g., "BTC Up/Down 15m")
+            crypto = None
+            for c in ['btc', 'eth', 'sol', 'xrp']:
+                if c.upper() in title.upper():
+                    crypto = c
+                    break
+
             if self.redeem_position(condition_id, nonce):
                 redeemed += 1
                 total_value += size
                 nonce += 1
+
+                if crypto:
+                    resolved_positions.append({
+                        'crypto': crypto,
+                        'condition_id': condition_id,
+                        'size': size
+                    })
             time.sleep(2)
 
         if redeemed > 0:
             log.info(f"Redeemed {redeemed} positions (~${total_value:.2f})")
 
-        return total_value
+        return total_value, resolved_positions
 
 
 # =============================================================================
@@ -1718,6 +1757,33 @@ def run_bot():
     else:
         log.info("Agent system not available - using legacy logic only")
 
+    # Initialize shadow trading orchestrator
+    orchestrator = None
+    if SHADOW_TRADING_AVAILABLE and agent_config.ENABLE_SHADOW_TRADING:
+        try:
+            # Build shadow strategy configs from library
+            shadow_configs = [
+                STRATEGY_LIBRARY[name]
+                for name in agent_config.SHADOW_STRATEGIES
+                if name in STRATEGY_LIBRARY
+            ]
+
+            orchestrator = SimulationOrchestrator(
+                strategies=shadow_configs,
+                db_path=agent_config.SHADOW_DB_PATH,
+                starting_balance=agent_config.SHADOW_STARTING_BALANCE
+            )
+            log.info(f"📊 Shadow Trading: {len(orchestrator.strategies)} strategies running")
+            for name in orchestrator.strategies.keys():
+                log.info(f"  • {name}")
+        except Exception as e:
+            log.error(f"Shadow trading init failed: {e}")
+            orchestrator = None
+    elif SHADOW_TRADING_AVAILABLE and not agent_config.ENABLE_SHADOW_TRADING:
+        log.info("Shadow trading disabled in config")
+    else:
+        log.warning("Shadow trading module not available")
+
     # Track bets per epoch
     epoch_trades: Dict[str, Dict[int, List[str]]] = {c: {} for c in CRYPTOS}
     epoch_bet_placed: Dict[int, bool] = {}
@@ -1776,10 +1842,58 @@ def run_bot():
                     state.current_balance = balance
 
             # 6. CHECK REDEMPTIONS
-            redeemed = redeemer.check_and_redeem()
+            redeemed, resolved_positions = redeemer.check_and_redeem()
             if redeemed > 0:
                 balance = get_usdc_balance()
                 state.current_balance = balance
+
+                # SHADOW TRADING: Resolve outcomes for shadow strategies
+                if orchestrator and resolved_positions:
+                    try:
+                        # For each resolved position, determine outcome by checking if it was in open_positions
+                        # If redeemable + has size, it won. We need to match with our tracked positions.
+                        for resolved in resolved_positions:
+                            crypto = resolved['crypto']
+
+                            # Find matching position in our tracked positions to get epoch and direction
+                            matching_pos = None
+                            for pos in guardian.open_positions:
+                                if pos.crypto == crypto:
+                                    matching_pos = pos
+                                    break
+
+                            if matching_pos:
+                                # Position was redeemed = it won
+                                # The actual outcome matches the predicted direction
+                                outcome = matching_pos.direction
+                                orchestrator.on_epoch_resolution(
+                                    crypto=crypto,
+                                    epoch=matching_pos.epoch,
+                                    outcome=outcome
+                                )
+                                log.info(f"[Shadow] Resolved {crypto} epoch {matching_pos.epoch}: {outcome}")
+                    except Exception as e:
+                        log.error(f"Shadow trading outcome resolution failed: {e}")
+
+            # SHADOW TRADING: Check for expired positions (losses)
+            # Positions that have passed their epoch but weren't redeemed = lost
+            if orchestrator:
+                try:
+                    current_epoch = (int(time.time()) // 900) * 900
+                    for pos in list(guardian.open_positions):
+                        # If position's epoch has ended (current epoch is > position epoch)
+                        if current_epoch > pos.epoch:
+                            # This position expired without being redeemed = loss
+                            # The actual outcome is opposite of predicted direction
+                            outcome = "Down" if pos.direction == "Up" else "Up"
+                            orchestrator.on_epoch_resolution(
+                                crypto=pos.crypto,
+                                epoch=pos.epoch,
+                                outcome=outcome
+                            )
+                            log.info(f"[Shadow] Expired position {pos.crypto} epoch {pos.epoch}: predicted {pos.direction}, actual {outcome}")
+                except Exception as e:
+                    log.error(f"Shadow trading expired position check failed: {e}")
 
             # 7. EVALUATE EACH CRYPTO (ALL TIMEFRAMES)
             current_epoch = price_feed.get_current_epoch()
@@ -1840,6 +1954,31 @@ def run_bot():
                                 regime=tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
                                 mode=state.mode
                             )
+
+                            # SHADOW TRADING: Broadcast market data to shadow strategies
+                            if orchestrator:
+                                try:
+                                    market_data = {
+                                        'prices': {
+                                            'btc': price_feed.current_prices.get('btc', 0),
+                                            'eth': price_feed.current_prices.get('eth', 0),
+                                            'sol': price_feed.current_prices.get('sol', 0),
+                                            'xrp': price_feed.current_prices.get('xrp', 0)
+                                        },
+                                        'orderbook': {
+                                            'yes': {'price': prices['Up']['ask']},
+                                            'no': {'price': prices['Down']['ask']}
+                                        },
+                                        'positions': guardian.open_positions,
+                                        'balance': state.current_balance,
+                                        'time_in_epoch': time_in_epoch,
+                                        'rsi': rsi_value,
+                                        'regime': tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
+                                        'mode': state.mode
+                                    }
+                                    orchestrator.on_market_data(crypto, current_epoch, market_data)
+                                except Exception as e:
+                                    log.error(f"Shadow trading broadcast failed: {e}")
 
                         # If agents say SKIP, continue to next crypto
                             if not agent_should_trade:

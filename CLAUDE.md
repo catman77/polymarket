@@ -1,8 +1,8 @@
 # Polymarket AutoTrader - AI Assistant Context
 
-**Last Updated:** 2026-01-13
-**Bot Version:** v12.1
-**Status:** Production - Trading Live on VPS
+**Last Updated:** 2026-01-14
+**Bot Version:** v12.1 (with Shadow Trading System)
+**Status:** Production - Trading Live on VPS with Shadow Strategy Testing
 
 ---
 
@@ -59,8 +59,227 @@ polymarket-autotrader/
 │   └── DEPLOYMENT.md             # VPS deployment guide
 ├── .claude/                      # AI assistant commands
 │   └── commands/                 # Slash commands for common tasks
+├── simulation/                   # Shadow trading system (NEW!)
+│   ├── strategy_configs.py       # Strategy library & configurations
+│   ├── shadow_strategy.py        # Virtual trading engine
+│   ├── orchestrator.py           # Multi-strategy coordinator
+│   ├── trade_journal.py          # SQLite database for logging
+│   ├── dashboard.py              # Live comparison dashboard
+│   ├── analyze.py                # CLI analysis tool
+│   ├── export.py                 # CSV export utility
+│   └── trade_journal.db          # SQLite database (gitignored)
 └── CLAUDE.md                     # This file
 ```
+
+---
+
+## Shadow Trading System
+
+**NEW in Jan 14, 2026**: The bot now includes a **shadow trading system** that runs alternative strategies in parallel with the live bot for performance comparison and strategy optimization.
+
+### What is Shadow Trading?
+
+Shadow trading runs **hypothetical strategies** alongside the live bot:
+- All strategies receive the same market data at the same time
+- Shadow strategies make virtual trades (no real money at risk)
+- Track virtual positions, balance, and performance metrics
+- Compare strategies side-by-side to find optimal parameters
+
+**Benefits:**
+- **Zero Risk** - Shadow trades are virtual (no real money)
+- **Real-time Testing** - Against live market conditions (not historical)
+- **Apples-to-apples Comparison** - All strategies tested on identical data
+- **Continuous Learning** - Accumulate performance data organically
+
+### How It Works
+
+```
+Live Bot (current strategy)
+       ↓
+Market Data Broadcast
+       ↓
+Shadow Strategies (conservative, aggressive, contrarian_focused, etc.)
+       ↓
+Virtual Trades Executed
+       ↓
+Outcomes Resolved After Epoch
+       ↓
+SQLite Database Logging
+       ↓
+Comparison Reports & Analysis
+```
+
+### Configuration
+
+Shadow trading is controlled via `config/agent_config.py`:
+
+```python
+# Master enable/disable
+ENABLE_SHADOW_TRADING = True  # Set False to disable
+
+# Which strategies to run
+SHADOW_STRATEGIES = [
+    'conservative',           # High thresholds (0.75/0.60)
+    'aggressive',             # Lower thresholds (0.55/0.45)
+    'contrarian_focused',     # Boost SentimentAgent
+    'momentum_focused',       # Boost TechAgent
+    'no_regime_adjustment',   # Disable regime adjustments
+]
+
+# Virtual starting balance per strategy
+SHADOW_STARTING_BALANCE = 100.0
+
+# Database path
+SHADOW_DB_PATH = 'simulation/trade_journal.db'
+```
+
+### Available Strategies
+
+The `STRATEGY_LIBRARY` in `simulation/strategy_configs.py` includes:
+
+1. **default** - Current production strategy (0.40/0.40/0.30)
+2. **conservative** - High thresholds (0.75/0.60), fewer trades
+3. **aggressive** - Lower thresholds (0.55/0.45), more trades
+4. **contrarian_focused** - 1.5x SentimentAgent weight, fade overpriced
+5. **momentum_focused** - 1.5x TechAgent weight, follow confluence
+6. **no_regime_adjustment** - Disable regime-based weight adjustments
+7. **equal_weights_static** - No adaptive/regime adjustments
+8. **high_confidence_only** - Extreme filter (0.80/0.70/0.50)
+9. **low_barrier** - Permissive (0.30/0.30/0.20)
+
+### Usage
+
+#### 1. Live Dashboard (Auto-refresh)
+
+Watch real-time performance comparison:
+
+```bash
+python3 simulation/dashboard.py
+# Refreshes every 5 seconds
+
+# Custom interval:
+python3 simulation/dashboard.py --interval 10
+```
+
+**Sample Output:**
+```
+================================================================================
+                        🎯 SHADOW TRADING DASHBOARD 🎯
+================================================================================
+
+Rank   Strategy                  Trades   W/L      Win Rate   Total P&L    Avg P&L   ROI
+------------------------------------------------------------------------------------------------
+🟢 1   contrarian_focused        12       8W/4L    66.7%      $+8.45       $+0.70    🟢 +8.5%
+🟢 2   aggressive                18       11W/7L   61.1%      $+5.20       $+0.29    +5.2%
+⚪ 3   default (LIVE)            10       6W/4L    60.0%      $+3.80       $+0.38    +3.8%
+🔴 4   momentum_focused          15       8W/7L    53.3%      $-2.70       $-0.18    🔴 -2.7%
+
+================================================================================
+🏆 Best P&L: contrarian_focused ($+8.45)
+🎯 Best Win Rate: contrarian_focused (66.7%)
+📊 Overall: 55 resolved trades, 60.0% win rate
+================================================================================
+```
+
+#### 2. CLI Analysis
+
+Query performance data:
+
+```bash
+# Compare all strategies
+python3 simulation/analyze.py compare
+
+# View specific strategy details
+python3 simulation/analyze.py details --strategy contrarian_focused
+
+# Recent decisions
+python3 simulation/analyze.py decisions --limit 50
+```
+
+#### 3. Export to CSV
+
+Export data for external analysis:
+
+```bash
+# Export performance summary
+python3 simulation/export.py performance -o results.csv
+
+# Export all trades
+python3 simulation/export.py trades -o trades.csv
+
+# Export outcomes
+python3 simulation/export.py outcomes -o outcomes.csv
+
+# Export specific strategy
+python3 simulation/export.py trades --strategy conservative -o conservative_trades.csv
+```
+
+### Database Schema
+
+SQLite database at `simulation/trade_journal.db`:
+
+**Tables:**
+- `strategies` - Strategy configurations and metadata
+- `decisions` - Every decision made (trade or skip)
+- `trades` - Executed trades (real + shadow)
+- `outcomes` - Resolved outcomes (win/loss)
+- `agent_votes` - Individual agent votes per decision
+- `performance` - Aggregated metrics snapshots
+
+Query directly with:
+```bash
+sqlite3 simulation/trade_journal.db
+sqlite> SELECT * FROM strategies;
+sqlite> SELECT strategy, win_rate, total_pnl FROM performance ORDER BY total_pnl DESC;
+```
+
+### Adding Custom Strategies
+
+Create new strategies in `simulation/strategy_configs.py`:
+
+```python
+STRATEGY_LIBRARY['my_custom'] = StrategyConfig(
+    name='my_custom',
+    description='Test extreme thresholds',
+    consensus_threshold=0.80,  # Very high bar
+    min_confidence=0.70,
+    adaptive_weights=False,
+    agent_weights={
+        'TechAgent': 2.0,      # Double weight
+        'SentimentAgent': 0.5,
+        'RegimeAgent': 0.5,
+        'RiskAgent': 1.0
+    }
+)
+```
+
+Then add to `config/agent_config.py`:
+```python
+SHADOW_STRATEGIES = [
+    'default',
+    'my_custom'
+]
+```
+
+### Performance Snapshots
+
+Shadow trading logs performance after every resolved trade:
+- Balance updates
+- Win/loss tracking
+- P&L calculations
+- ROI metrics
+
+This provides granular historical data for analyzing strategy evolution over time.
+
+### Integration with Live Bot
+
+Shadow trading is **non-invasive**:
+- Runs alongside live bot without modifying core logic
+- Minimal CPU overhead (< 5% for 5 strategies)
+- No impact on live trading speed
+- Can be disabled anytime via config flag
+
+Live bot broadcasts market data to orchestrator on each scan cycle. Shadow strategies make independent decisions and track virtual positions. Outcomes are resolved after epoch ends (when live bot redeems positions).
 
 ---
 
