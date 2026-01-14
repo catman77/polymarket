@@ -1898,12 +1898,14 @@ def run_bot():
             # SHADOW TRADING: Check shadow strategy positions for expiration
             # Shadow positions need their own expiration check since they're independent of live bot
             if orchestrator:
+                log.info("[Shadow Check] Running expiration check...")  # Debug: verify this runs
                 try:
                     current_epoch = (int(time.time()) // 900) * 900
                     resolved_positions = []
 
                     # Debug: count total positions
                     total_positions = sum(len(s.positions) for s in orchestrator.strategies.values())
+                    log.info(f"[Shadow Check] Found {total_positions} total positions")
                     if total_positions > 0:
                         log.info(f"[Shadow Check] Checking {total_positions} positions for expiration")
 
