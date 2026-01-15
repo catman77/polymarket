@@ -86,14 +86,9 @@ class AgentSystemWrapper:
 
         self.enabled = enabled
 
-        # Determine agent weights
+        # Determine agent weights - load from config if not specified
         if agent_weights is None:
-            agent_weights = {
-                'TechAgent': 1.0,
-                'SentimentAgent': 1.0,
-                'RegimeAgent': 1.0,
-                'CandlestickAgent': 1.0
-            }
+            agent_weights = agent_config.AGENT_WEIGHTS
 
         # Auto-detect if TimePatternAgent should be included
         if include_time_pattern is None:
