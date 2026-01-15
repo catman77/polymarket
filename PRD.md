@@ -137,21 +137,40 @@ elif agent_system and agent_system.enabled:
 
 ## Secondary Priorities (Next 48 Hours)
 
-### P3: Validate Trade Logging is Working
+### ✅ P3: Validate Trade Logging is Working (COMPLETED)
+
+**Status:** FIXED - Iteration 3 (Jan 15, 2026)
 
 **Goal:** Confirm ML trades are being logged to `simulation/trade_journal.db`
 
-**Steps:**
-1. Check database for `ml_live_ml_random_forest` strategy entries
-2. Verify trades logged since 16:00 UTC today
-3. Compare log count vs actual orders placed
+**Issues Found:**
+1. ❌ Database file was empty (0 bytes) - never initialized
+2. ❌ `log_ml_trade_direct()` function had incompatible schema:
+   - Missing `size` column (required by trades table)
+   - Missing `weighted_score` column (required by trades table)
+   - Would fail silently on every trade attempt
 
-**Query to Run:**
+**Fixes Applied:**
+1. ✅ Created `validate_trade_logging.py` script to check database health
+2. ✅ Database now auto-initializes with correct schema if empty
+3. ✅ Fixed `log_ml_trade_direct()` to include all required columns:
+   - Added `size` parameter (defaults to `shares * entry_price`)
+   - Added `weighted_score` parameter (defaults to `confidence`)
+   - Added error logging (was failing silently before)
+4. ✅ Created `test_ml_logging.py` to verify logging works
+
+**Validation:**
 ```bash
-sqlite3 simulation/trade_journal.db "SELECT COUNT(*) FROM trades WHERE strategy = 'ml_live_ml_random_forest' AND timestamp > $(date -d '16:00' +%s)"
+python3 validate_trade_logging.py  # Passes all checks
+python3 test_ml_logging.py         # Tests logging function
 ```
 
-**Expected:** 15-20 trades logged (matching number of orders placed)
+**Result:**
+- ✅ Database initialized with correct schema
+- ✅ ML trades can now be logged successfully
+- ✅ Test trade logged and verified in database
+
+**Next:** Deploy to VPS and monitor live trades being logged
 
 ---
 

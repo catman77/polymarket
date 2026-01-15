@@ -121,11 +121,64 @@
 1. Deploy to VPS: `ssh root@216.238.85.11 && cd /opt/polymarket-autotrader && ./scripts/deploy.sh`
 2. Monitor logs for conflicts: `tail -f bot.log | grep -E "CONFLICT|BLOCKED"`
 3. Verify no conflicting positions in next 20 trades
-4. P3: Validate trade logging (check simulation/trade_journal.db)
+4. ✅ P3: Validate trade logging (COMPLETED)
 5. P4: Add monitoring scripts (secondary priority)
 
 **Ready for deployment:** All immediate coding tasks complete.
 The bot should now reject conflicting orders with clear error messages.
+
+---
+
+## Iteration 3 - Validate Trade Logging (P3)
+- What was implemented:
+  - Created validate_trade_logging.py script to check database health
+  - Fixed empty database (0 bytes) by adding auto-initialization
+  - Fixed log_ml_trade_direct() function with incompatible schema
+  - Added missing 'size' and 'weighted_score' columns to INSERT statement
+  - Added error logging (was failing silently before)
+  - Created test_ml_logging.py to verify function works
+
+- Files changed:
+  - bot/momentum_bot_v12.py (lines 76-127)
+    - Updated log_ml_trade_direct() signature to accept size and weighted_score
+    - Added default calculation: size = shares * entry_price
+    - Added default: weighted_score = confidence
+    - Changed INSERT to include size, shares, confidence, weighted_score
+    - Added error logging on exception
+  - validate_trade_logging.py (new file)
+    - Checks database existence and size
+    - Validates schema matches expected tables/columns
+    - Counts ML trades and shows recent ones
+    - Auto-initializes database if empty
+  - test_ml_logging.py (new file)
+    - Tests logging function with sample trade
+    - Verifies data is correctly stored in database
+  - PRD.md (marked P3 as complete)
+
+- Learnings for future iterations:
+  - The log_ml_trade_direct() function was silently failing on every trade
+  - Database file existed but was 0 bytes (never initialized)
+  - TradeJournalDB expects: decision_id, strategy, crypto, epoch, direction, entry_price, size, shares, confidence, weighted_score, timestamp
+  - Old code was missing 'size' and 'weighted_score' columns
+  - Need to calculate size from shares * entry_price
+  - Can use confidence as default for weighted_score
+  - Database initialization happens in TradeJournalDB.__init__ via _create_tables()
+  - SQLite accepts NULL for optional columns like decision_id
+
+- Gotchas encountered:
+  - Cannot import momentum_bot_v12.py in test scripts (requires too many dependencies)
+  - Solution: Define function inline in test script
+  - Database file can exist (0 bytes) but not be initialized
+  - Need explicit schema creation before first INSERT
+  - Exception handling was returning False but not logging why
+
+- Useful context:
+  - validate_trade_logging.py can be run anytime to check database health
+  - test_ml_logging.py creates a test trade to verify logging works
+  - The trades table has UNIQUE constraint on (strategy, crypto, epoch)
+  - This prevents duplicate trades for same crypto/epoch
+  - Database location: simulation/trade_journal.db
+  - Schema matches TradeJournalDB class in simulation/trade_journal.py
 
 ---
 

@@ -75,14 +75,32 @@ import sqlite3
 
 def log_ml_trade_direct(db_path: str, strategy: str, crypto: str, epoch: str,
                         direction: str, entry_price: float, shares: int,
-                        confidence: float) -> bool:
+                        confidence: float, size: float = None, weighted_score: float = None) -> bool:
     """
     Direct SQLite logging without TradeJournal class.
     Returns True if successful, False otherwise.
+
+    Args:
+        db_path: Path to trade_journal.db
+        strategy: Strategy name (e.g., 'ml_live_ml_random_forest')
+        crypto: Crypto symbol (btc, eth, sol, xrp)
+        epoch: Epoch timestamp string
+        direction: Trade direction (Up or Down)
+        entry_price: Entry price (0-1)
+        shares: Number of shares purchased
+        confidence: ML confidence (0-1)
+        size: Position size in USD (defaults to shares * entry_price)
+        weighted_score: Weighted score (defaults to confidence)
     """
     try:
         conn = sqlite3.connect(db_path)
         timestamp = time.time()
+
+        # Calculate defaults
+        if size is None:
+            size = shares * entry_price
+        if weighted_score is None:
+            weighted_score = confidence
 
         # Register strategy if not exists
         conn.execute('''
@@ -90,17 +108,22 @@ def log_ml_trade_direct(db_path: str, strategy: str, crypto: str, epoch: str,
             VALUES (?, ?, ?, ?)
         ''', (strategy, 'Live ML Random Forest Bot', 1, timestamp))
 
-        # Log trade
+        # Log trade with all required columns
         conn.execute('''
-            INSERT INTO trades (strategy, crypto, epoch, timestamp, direction,
-                               entry_price, shares, confidence)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (strategy, crypto, epoch, timestamp, direction, entry_price, shares, confidence))
+            INSERT INTO trades (strategy, crypto, epoch, direction, entry_price,
+                               size, shares, confidence, weighted_score, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (strategy, crypto, epoch, direction, entry_price, size, shares,
+              confidence, weighted_score, timestamp))
 
         conn.commit()
         conn.close()
         return True
-    except Exception:
+    except Exception as e:
+        # Log error but don't crash bot
+        import logging
+        log = logging.getLogger(__name__)
+        log.error(f"Failed to log ML trade: {e}")
         return False
 
 # ML Bot imports (for live ML trading)
