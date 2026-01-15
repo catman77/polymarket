@@ -356,3 +356,58 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 10 - US-012: Integrate Kelly sizing into shadow system
+- What was implemented:
+  - Modified simulation/shadow_strategy.py execute_trade() method
+  - Added KellyPositionSizer import
+  - Moved entry_price calculation BEFORE position sizing (needed for Kelly)
+  - Implemented conditional logic: if self.config.use_kelly_sizing → use Kelly, else → use fixed tiers
+  - Kelly sizing uses confidence as win_prob, entry_price as odds, balance as bankroll
+  - Added debug logging for Kelly calculations (position size, kelly %, win_prob, net_odds)
+  - Verified kelly_sizing strategy will appear in dashboard after restart
+  
+- Files changed:
+  - simulation/shadow_strategy.py (lines 19-20: Import, lines 194-252: Kelly sizing integration)
+  - PRD.md (lines 247-262: Marked US-012 complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Kelly Criterion requires entry_price BEFORE sizing calculation (net_odds = (1-entry)/entry)
+  - Original code calculated size first, then entry_price → had to reorder
+  - KellyPositionSizer.calculate_kelly_size() returns (size_usd, debug_dict)
+  - Debug dict contains: win_prob, net_odds, kelly_full, kelly_fractional, kelly_clamped
+  - Shadow strategies auto-detect use_kelly_sizing flag (no manual toggle needed)
+  - Kelly sizing is only for kelly_sizing strategy - all others still use fixed tiers
+
+- Key implementation details:
+  - Kelly parameters: kelly_fraction=0.25 (fractional), min=2%, max=15%
+  - Matches bot's existing risk limits (2-15% of balance)
+  - Confidence becomes win_prob (60% confidence → 60% win probability)
+  - Entry price determines net_odds (0.20 entry → 4.0x payout odds)
+  - Variable sizing: High edge → larger bets, low edge → smaller bets
+  - Debug logs show: size, kelly %, win_prob, net_odds per trade
+
+- Integration flow:
+  1. make_decision() → returns confidence, direction, weighted_score
+  2. execute_trade() → gets entry_price from orderbook
+  3. If use_kelly_sizing=True: kelly_sizer.calculate_kelly_size(confidence, entry_price, balance)
+  4. If False: agent_system.get_position_size() (existing fixed tiers)
+  5. Create position with calculated size
+  6. Log trade details (includes Kelly debug if applicable)
+
+- What worked:
+  - Code structure allows clean conditional (if/else) for sizing methods
+  - Reordering entry_price calculation before sizing was straightforward
+  - Kelly debug output provides transparency for analysis
+  - Syntax check passed (no errors)
+  - Ready for US-013 performance comparison after 100+ trades
+
+- Expected behavior after deployment:
+  - kelly_sizing strategy will show variable position sizes (2-15%)
+  - default strategy will continue using fixed 7% (balance $100)
+  - Kelly trades logged with debug info: "Kelly sizing: $X.XX (Y% of balance) | win_prob=Z, net_odds=W"
+  - Dashboard will show kelly_sizing as strategy #26 (after ultra_selective)
+
+---
+

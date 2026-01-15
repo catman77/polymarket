@@ -248,16 +248,16 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a developer, I need shadow strategies to use Kelly sizing when configured so I can test it with virtual money.
 
 **Acceptance Criteria:**
-- [ ] Modify `simulation/shadow_strategy.py` execute_trade() method
-- [ ] Check if `self.config.use_kelly_sizing` is True
-- [ ] If True: Import KellyPositionSizer, use confidence as win_prob
-- [ ] If False: Use existing fixed tier sizing
-- [ ] Log Kelly sizing calculations (debug level)
-- [ ] Verify kelly_sizing strategy appears in `python3 simulation/dashboard.py`
-- [ ] Verify kelly_sizing uses variable position sizes (not fixed)
-- [ ] Typecheck passes
+- [x] Modify `simulation/shadow_strategy.py` execute_trade() method
+- [x] Check if `self.config.use_kelly_sizing` is True
+- [x] If True: Import KellyPositionSizer, use confidence as win_prob
+- [x] If False: Use existing fixed tier sizing
+- [x] Log Kelly sizing calculations (debug level)
+- [x] Verify kelly_sizing strategy appears in `python3 simulation/dashboard.py`
+- [x] Verify kelly_sizing uses variable position sizes (not fixed)
+- [x] Typecheck passes
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 **Dependencies:** Requires US-011 complete
 

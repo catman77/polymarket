@@ -17,6 +17,7 @@ from typing import Dict, List, Optional
 sys.path.append(str(Path(__file__).parent.parent))
 
 from bot.agent_wrapper import AgentSystemWrapper
+from bot.position_sizer import KellyPositionSizer
 from .strategy_configs import StrategyConfig
 
 
@@ -193,42 +194,61 @@ class ShadowStrategy:
     def execute_trade(self, decision: dict, market_data: dict):
         """
         Execute hypothetical trade (update virtual positions & balance).
-        
+
         Args:
             decision: Decision dict from make_decision()
             market_data: Market data dict with orderbook
         """
         if not decision['should_trade']:
             return
-        
+
         crypto = decision['crypto']
-        
+
         # Check if we already have position for this crypto
         if crypto in self.positions:
             print(f"[{self.name}] Already have {crypto} position, skipping")
             return
-        
-        # Calculate position size
-        consecutive_losses = self._get_recent_loss_streak()
-        size = self.agent_system.get_position_size(
-            confidence=decision['confidence'],
-            balance=self.balance,
-            consecutive_losses=consecutive_losses,
-            weighted_score=decision['weighted_score']
-        )
-        
-        # Check if we have enough balance
-        if size > self.balance:
-            print(f"[{self.name}] Insufficient balance (${self.balance:.2f} < ${size:.2f})")
-            return
-        
-        # Get entry price from orderbook
+
+        # Get entry price from orderbook BEFORE sizing
         orderbook = market_data['orderbook']
         if decision['direction'] == 'Up':
             entry_price = orderbook['yes']['price']
         else:
             entry_price = orderbook['no']['price']
-        
+
+        # Calculate position size
+        if self.config.use_kelly_sizing:
+            # Use Kelly Criterion sizing
+            kelly_sizer = KellyPositionSizer(
+                kelly_fraction=0.25,  # Fractional Kelly (25%)
+                min_size_pct=0.02,    # Min 2% of balance
+                max_size_pct=0.15     # Max 15% of balance
+            )
+            size, kelly_debug = kelly_sizer.calculate_kelly_size(
+                win_prob=decision['confidence'],
+                entry_price=entry_price,
+                balance=self.balance
+            )
+            # Log Kelly sizing (debug level)
+            print(f"[{self.name}] Kelly sizing: ${size:.2f} "
+                  f"({kelly_debug['kelly_clamped']*100:.1f}% of balance) | "
+                  f"win_prob={kelly_debug['win_prob']:.2f}, "
+                  f"net_odds={kelly_debug['net_odds']:.2f}x")
+        else:
+            # Use existing fixed tier sizing
+            consecutive_losses = self._get_recent_loss_streak()
+            size = self.agent_system.get_position_size(
+                confidence=decision['confidence'],
+                balance=self.balance,
+                consecutive_losses=consecutive_losses,
+                weighted_score=decision['weighted_score']
+            )
+
+        # Check if we have enough balance
+        if size > self.balance:
+            print(f"[{self.name}] Insufficient balance (${self.balance:.2f} < ${size:.2f})")
+            return
+
         shares = size / entry_price
         
         # Create position
