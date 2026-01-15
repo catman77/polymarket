@@ -461,7 +461,7 @@ CREATE TABLE alerts (
 - [ ] Sign up for Whale Alert API
 - [x] Implement OnChainAgent (exchange flow tracking)
 - [ ] Sign up for Twitter API v2
-- [ ] Implement SocialSentimentAgent (Twitter + Reddit + Trends)
+- [x] Implement SocialSentimentAgent (Twitter + Reddit + Trends)
 - [ ] Add sentiment analysis model (finbert)
 - [ ] Shadow test both agents
 - [ ] Validate signal quality
