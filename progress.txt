@@ -153,3 +153,38 @@ STATUS: ✅ Planning complete, ready for implementation
   - All acceptance criteria met, typecheck passes
 
 ---
+
+## Iteration 5 - US-007: Verify ultra_selective shadow testing
+- What was implemented:
+  - Deployed ultra_selective strategy to VPS via git pull
+  - Restarted polymarket-bot service on VPS
+  - Verified shadow trading increased from 23 to 24 strategies
+  - Confirmed ultra_selective configuration exists with correct thresholds (0.80/0.70/0.70)
+  - Confirmed shadow decisions being processed (logs show "[Shadow] Processed 24 decisions")
+
+- Files verified:
+  - config/agent_config.py (line 373: ultra_selective in SHADOW_STRATEGIES)
+  - simulation/strategy_configs.py (lines 785-820: ultra_selective StrategyConfig)
+  - VPS bot logs (21:53:38 UTC: "📊 Shadow Trading: 24 strategies running")
+
+- Learnings for future iterations:
+  - Shadow trading system auto-loads new strategies on bot restart without manual initialization
+  - Strategy count visible in logs at startup: "Shadow Trading: [X] strategies running"
+  - Dashboard requires web3 dependencies - use log verification or direct database queries instead
+  - Shadow strategy verification can be done via config file grep + log analysis (no dashboard needed)
+  - Bot processes shadow decisions every scan cycle: "[Shadow] Processed X decisions (Y trades)"
+
+- Key implementation details:
+  - ultra_selective now running as strategy #25 (up from 24 previous strategies)
+  - Virtual starting balance: $100 per strategy (standard for all shadow strategies)
+  - Will collect performance data over next 7-10 days (target: 100+ trades)
+  - Higher thresholds (0.80/0.70) expected to produce 50% fewer trades than default
+  - Next validation step (US-008) requires 100+ trades before statistical comparison
+
+- What worked:
+  - Git pull successfully deployed all new code (16 files changed, 2341 insertions)
+  - systemctl restart cleanly reloaded configuration without errors
+  - Shadow trading system immediately recognized new strategy from SHADOW_STRATEGIES list
+  - Log verification confirmed operational status without requiring dashboard access
+
+---
