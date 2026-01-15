@@ -177,3 +177,29 @@
   - Weighted sentiment aggregation: Twitter 40%, Reddit 40%, Trends 20%
 ---
 
+## Iteration 8 - Add Week 3 Agents to Shadow Trading System
+- Added OnChainAgent and SocialSentimentAgent to shadow trading for testing
+- Files changed:
+  - config/agent_config.py (added OnChainAgent + SocialSentimentAgent with 0.0 weight)
+  - simulation/strategy_configs.py (updated all 30 strategies + added 6 new Week 3 strategies)
+  - PRD.md (marked "Shadow test both agents" complete)
+- New shadow strategies (6 total):
+  - onchain_focused: Boost OnChainAgent 1.5x for whale tracking
+  - social_sentiment_focused: Boost SocialSentimentAgent 1.5x for crowd psychology
+  - phase1_week3_combo: All Phase 1 agents (OrderBook, Funding, OnChain, Social) enabled
+  - onchain_only: Isolate OnChain performance (single agent)
+  - social_sentiment_only: Isolate Social performance (single agent)
+  - week3_only: OnChain + Social agents only (no legacy agents)
+- Total shadow strategies: 36 (increased from 30)
+- Learnings for future iterations:
+  - New agents default to 0.0 weight in agent_config.py (disabled until API keys configured)
+  - All shadow strategies must include all agents in agent_weights dict (even if 0.0)
+  - Can use Python regex to bulk-update all strategies at once (pattern matching on dict structure)
+  - Shadow strategies allow A/B testing: focused (1.5x weight), combo (all enabled), only (isolated)
+  - "X_only" strategies need lower thresholds (0.30 consensus vs 0.40) since single agent
+  - Strategy library now has clear sections: baseline, focused, only, combo patterns
+  - Week 3 agents ready for testing but won't vote until API keys added to .env
+  - Shadow system will track performance of all 36 strategies in parallel
+  - Each new agent group (Week 1, Week 3) gets 6 shadow strategies for comprehensive testing
+---
+
