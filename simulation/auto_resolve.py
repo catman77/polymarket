@@ -67,16 +67,23 @@ def main():
                                 orch.on_epoch_resolution(crypto, epoch, outcome_result.direction)
 
                                 # Verify outcome was logged to database
-                                outcome_count = orch.db.conn.execute('''
-                                    SELECT COUNT(*) FROM outcomes
+                                # Verify outcome was saved with correct pnl/payout values
+                                outcome_row = orch.db.conn.execute('''
+                                    SELECT pnl, payout, predicted_direction, actual_direction
+                                    FROM outcomes
                                     WHERE strategy=? AND crypto=? AND epoch=?
-                                ''', (name, crypto, epoch)).fetchone()[0]
+                                ''', (name, crypto, epoch)).fetchone()
 
                                 result_emoji = "✅" if pos.direction == outcome_result.direction else "❌"
-                                save_status = "(SAVED)" if outcome_count > 0 else "(NOT SAVED ⚠️)"
 
-                                print(f"{result_emoji} [{name}] {crypto.upper()} epoch {epoch}: {outcome_result.direction} "
-                                      f"(${outcome_result.start_price:.0f} -> ${outcome_result.end_price:.0f}, {outcome_result.change_pct:+.2f}%) {save_status}")
+                                if outcome_row:
+                                    pnl, payout, pred, actual = outcome_row
+                                    print(f"{result_emoji} [{name}] {crypto.upper()} epoch {epoch}: "
+                                          f"pred={pred} actual={actual} pnl=${pnl:+.2f} payout=${payout:.2f} "
+                                          f"(${outcome_result.start_price:.0f} -> ${outcome_result.end_price:.0f}, {outcome_result.change_pct:+.2f}%)")
+                                else:
+                                    print(f"⚠️  [{name}] {crypto.upper()} epoch {epoch}: {outcome_result.direction} (NOT SAVED)")
+
                                 resolved_count += 1
                             else:
                                 print(f"⚠️  [{name}] {crypto.upper()} epoch {epoch}: Could not fetch outcome (data unavailable)")

@@ -149,61 +149,80 @@ class SimulationOrchestrator:
             if position_key not in strategy.positions:
                 continue
 
+            # Capture position data BEFORE resolving (needed for payout calculation)
+            pos = strategy.positions[position_key]
+            position_size = pos.size
+
             # Resolve position (this updates balance and removes position)
             pnl = strategy.resolve_position(crypto, epoch, outcome)
 
-            # Find the corresponding trade in history to get trade details
+            if pnl is None:
+                continue
+
+            # Calculate payout from pnl and position size
+            if pnl > 0:
+                # Win: payout = pnl + size (we got back our money plus profit)
+                payout = pnl + position_size
+            else:
+                # Loss: payout = 0 (we lost everything)
+                payout = 0.0
+
+            # Find the corresponding trade in history for predicted_direction
             matching_trade = None
             for trade in strategy.trade_history:
                 if trade.crypto == crypto and trade.epoch == epoch:
                     matching_trade = trade
                     break
 
-            if matching_trade and pnl is not None:
-                try:
-                    # Find the trade_id from database
-                    trade_row = self.db.conn.execute('''
-                        SELECT id FROM trades
-                        WHERE strategy=? AND crypto=? AND epoch=?
-                    ''', (name, crypto, epoch)).fetchone()
+            if not matching_trade:
+                log.warning(f"[Shadow] No matching trade found for {name} {crypto} epoch {epoch}")
+                continue
 
-                    trade_id = trade_row[0] if trade_row else -1
+            try:
+                # Find the trade_id from database
+                trade_row = self.db.conn.execute('''
+                    SELECT id FROM trades
+                    WHERE strategy=? AND crypto=? AND epoch=?
+                ''', (name, crypto, epoch)).fetchone()
 
-                    # Log outcome with proper trade_id
-                    outcome_id = self.db.log_outcome(
-                        trade_id=trade_id,
-                        strategy=name,
-                        crypto=crypto,
-                        epoch=epoch,
-                        predicted_direction=matching_trade.direction,
-                        actual_direction=outcome,
-                        payout=matching_trade.payout or 0.0,
-                        pnl=pnl
-                    )
+                trade_id = trade_row[0] if trade_row else -1
 
-                    # Verify outcome was inserted
-                    if outcome_id > 0:
-                        log.debug(f"[Shadow] Logged outcome {outcome_id} for {name} {crypto} epoch {epoch}")
-                    else:
-                        log.warning(f"[Shadow] Failed to log outcome for {name} {crypto} epoch {epoch}")
+                # Log outcome with calculated payout
+                outcome_id = self.db.log_outcome(
+                    trade_id=trade_id,
+                    strategy=name,
+                    crypto=crypto,
+                    epoch=epoch,
+                    predicted_direction=matching_trade.direction,
+                    actual_direction=outcome,
+                    payout=payout,  # Use calculated payout instead of matching_trade.payout
+                    pnl=pnl
+                )
 
-                    # Log performance snapshot after each resolved trade
-                    metrics = strategy.get_performance()
-                    self.db.log_performance_snapshot(
-                        strategy=name,
-                        balance=metrics.current_balance,
-                        total_trades=metrics.total_trades,
-                        wins=metrics.wins,
-                        losses=metrics.losses,
-                        win_rate=metrics.win_rate,
-                        total_pnl=metrics.total_pnl,
-                        roi=metrics.roi
-                    )
+                # Verify outcome was inserted
+                if outcome_id > 0:
+                    result = "WIN" if pnl > 0 else "LOSS"
+                    log.info(f"[Shadow] {name} {crypto} {result}: payout=${payout:.2f}, pnl=${pnl:+.2f}")
+                else:
+                    log.warning(f"[Shadow] Failed to log outcome for {name} {crypto} epoch {epoch}")
 
-                except Exception as e:
-                    log.error(f"[Shadow] Error logging outcome for {name} {crypto} epoch {epoch}: {e}")
-                    import traceback
-                    traceback.print_exc()
+                # Log performance snapshot after each resolved trade
+                metrics = strategy.get_performance()
+                self.db.log_performance_snapshot(
+                    strategy=name,
+                    balance=metrics.current_balance,
+                    total_trades=metrics.total_trades,
+                    wins=metrics.wins,
+                    losses=metrics.losses,
+                    win_rate=metrics.win_rate,
+                    total_pnl=metrics.total_pnl,
+                    roi=metrics.roi
+                )
+
+            except Exception as e:
+                log.error(f"[Shadow] Error logging outcome for {name} {crypto} epoch {epoch}: {e}")
+                import traceback
+                traceback.print_exc()
     
     def get_comparison_report(self) -> Dict[str, any]:
         """
