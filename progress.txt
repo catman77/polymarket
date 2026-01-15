@@ -28,3 +28,40 @@ NEXT STEPS:
 - Begin Phase 1: Per-agent tracking implementation
 
 STATUS: ✅ Planning complete, ready for implementation
+
+---
+
+## ITERATION 2 - Jan 15, 2026 (Later Same Day)
+
+**Phase 1: Per-Agent Performance Tracking** - STARTED
+
+**Work Completed:**
+1. ✅ File Management (TASK 1):
+   - Archived old PRDs (PRD_ML_Stabilization.md, PRD_Multi_Agent_Comprehensive.md)
+   - Created new focused optimization PRD.md (4-week roadmap)
+   - Created new progress.txt tracking file
+   - Updated CLAUDE.md with optimization focus
+
+2. ✅ Database Schema Extension (TASK 2.1):
+   - Extended simulation/trade_journal.py schema
+   - Added agent_performance table (tracks per-agent win rates)
+   - Added agent_votes_outcomes table (links votes to outcomes)
+
+3. ✅ Agent Performance Tracker (TASK 2.2):
+   - Created analytics/agent_performance_tracker.py
+   - Implements agent vote → outcome matching
+   - Calculates win rates per agent
+   - Identifies underperformers (<50% win rate, 20+ votes)
+
+4. ✅ Agent Enable/Disable Flags (TASK 2.3):
+   - Added AGENT_ENABLED dict to config/agent_config.py
+   - Added get_enabled_agents() helper function
+   - Documented usage for performance-based control
+
+**Next Steps:**
+- Integrate AGENT_ENABLED flags into bot initialization
+- Wait for 100+ trades to analyze agent performance
+- Disable underperforming agents based on data
+- Document findings and win rate improvement
+
+**Target:** +2-3% win rate improvement by removing low-performing agents

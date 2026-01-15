@@ -34,6 +34,31 @@ AGENT_WEIGHTS = {
 }
 
 # =============================================================================
+# PER-AGENT ENABLE/DISABLE FLAGS
+# =============================================================================
+
+# Per-Agent Enable/Disable Flags
+# Set to False to disable specific agents based on performance tracking
+# Use analytics/agent_performance_tracker.py to identify underperformers
+AGENT_ENABLED = {
+    'TechAgent': True,
+    'SentimentAgent': True,
+    'RegimeAgent': True,
+    'CandlestickAgent': True,
+    'TimePatternAgent': True,
+    'OrderBookAgent': True,
+    'FundingRateAgent': True,
+    'OnChainAgent': False,  # Disabled: No API keys configured
+    'SocialSentimentAgent': False,  # Disabled: No API keys configured
+    'RiskAgent': True,
+    'GamblerAgent': True,
+}
+
+def get_enabled_agents():
+    """Returns list of enabled agent names"""
+    return [name for name, enabled in AGENT_ENABLED.items() if enabled]
+
+# =============================================================================
 # REGIME-SPECIFIC ADJUSTMENTS
 # =============================================================================
 

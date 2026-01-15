@@ -161,7 +161,33 @@ class TradeJournalDB:
                 FOREIGN KEY (strategy) REFERENCES strategies(name)
             )
         ''')
-        
+
+        # Agent performance tracking (per-agent metrics)
+        self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS agent_performance (
+                agent_name TEXT PRIMARY KEY,
+                total_votes INTEGER DEFAULT 0,
+                correct_votes INTEGER DEFAULT 0,
+                incorrect_votes INTEGER DEFAULT 0,
+                win_rate REAL DEFAULT 0.0,
+                avg_confidence REAL DEFAULT 0.0,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Agent votes outcomes (links agent_votes to outcomes)
+        self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS agent_votes_outcomes (
+                vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_vote_id INTEGER,
+                outcome_id INTEGER,
+                was_correct BOOLEAN,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (agent_vote_id) REFERENCES agent_votes(id),
+                FOREIGN KEY (outcome_id) REFERENCES outcomes(id)
+            )
+        ''')
+
         # Create indexes for common queries
         self.conn.execute('CREATE INDEX IF NOT EXISTS idx_decisions_strategy_epoch ON decisions(strategy, epoch)')
         self.conn.execute('CREATE INDEX IF NOT EXISTS idx_trades_strategy_epoch ON trades(strategy, epoch)')
