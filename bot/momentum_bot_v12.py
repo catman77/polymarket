@@ -717,9 +717,76 @@ class Guardian:
 
         return True, ""
 
+    def check_live_position_conflicts(self, crypto: str, direction: str) -> Tuple[bool, str]:
+        """
+        Query live Polymarket positions to check for conflicts.
+        Returns (has_conflict, conflict_message).
+        """
+        try:
+            resp = requests.get(
+                "https://data-api.polymarket.com/positions",
+                params={"user": EOA, "limit": 50},
+                timeout=10
+            )
+
+            if resp.status_code != 200:
+                log.warning(f"Failed to fetch live positions (status {resp.status_code})")
+                return False, ""  # Don't block on API failure
+
+            positions = resp.json()
+            crypto_upper = crypto.upper()
+
+            # Check each position for conflicts
+            for pos in positions:
+                size = float(pos.get('size', 0))
+                if size < 0.01:
+                    continue  # Skip negligible positions
+
+                # Get position title to extract crypto and direction
+                title = pos.get('title', '')
+                outcome = pos.get('outcome', '')
+
+                # Check if this position is for our target crypto
+                if crypto_upper not in title.upper():
+                    continue
+
+                # Extract direction from title or outcome
+                # Titles typically like: "BTC will go up in the next 15 minutes" / "BTC Down"
+                # Outcome field contains "Up" or "Down"
+                pos_direction = None
+                if 'Up' in outcome or 'up' in title.lower():
+                    pos_direction = 'Up'
+                elif 'Down' in outcome or 'down' in title.lower():
+                    pos_direction = 'Down'
+
+                if not pos_direction:
+                    continue  # Can't determine direction
+
+                # CONFLICT DETECTED if:
+                # 1. Same crypto AND same direction (already have this position)
+                # 2. Same crypto AND opposite direction (betting both sides)
+                if pos_direction == direction:
+                    log.warning(f"CONFLICT: Already have {crypto} {direction} position (size: {size:.1f})")
+                    return True, f"Already have {crypto} {direction} position (size: {size:.1f} shares)"
+                else:
+                    # Opposite direction - this is the critical bug!
+                    log.error(f"CRITICAL CONFLICT: Already have {crypto} {pos_direction} position, cannot bet {direction}")
+                    return True, f"Already have {crypto} {pos_direction} position - cannot bet both sides!"
+
+            return False, ""  # No conflicts found
+
+        except Exception as e:
+            log.error(f"Error checking live position conflicts: {e}")
+            return False, ""  # Don't block on error, but log it
+
     def can_open_position(self, crypto: str, epoch: int, direction: str) -> Tuple[bool, str]:
         """Check if we can open a new position (includes correlation check)."""
-        # Correlation check first
+        # PRIORITY 1: Check live Polymarket API for conflicts (P0 bug fix)
+        has_conflict, conflict_msg = self.check_live_position_conflicts(crypto, direction)
+        if has_conflict:
+            return False, conflict_msg
+
+        # Correlation check
         can_corr, reason = self.check_correlation_limits(direction)
         if not can_corr:
             return False, reason

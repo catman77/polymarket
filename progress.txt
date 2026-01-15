@@ -20,7 +20,7 @@
 1. ✅ ML not placing orders - Added order execution logic
 2. ✅ Auto-redemption broken - Fixed epoch gating
 3. ✅ Agent fallback causing conflicts - Removed guardian.add_position()
-4. ❌ **BLOCKING:** Still getting conflicting positions (investigating)
+4. ✅ **FIXED:** Conflicting positions - Added live API position check
 
 **Current Stats:**
 - Balance: $176.78
@@ -29,10 +29,48 @@
 - Loss from bugs: ~$65 today
 
 **Next Actions:**
-1. Investigate why conflicts still occurring
-2. Add explicit position conflict check
-3. Disable agent system completely when ML enabled
+1. ✅ Investigate why conflicts still occurring - Root cause found
+2. ✅ Add explicit position conflict check - Implemented
+3. Disable agent system completely when ML enabled (verified already working)
 4. Deploy and validate fix
+
+---
+
+## Iteration 1 - Fix Conflicting Positions Bug (P0)
+- What was implemented:
+  - Added Guardian.check_live_position_conflicts() method
+  - Queries Polymarket Data API for live positions before each trade
+  - Detects conflicts by crypto + direction (same OR opposite)
+  - Returns detailed conflict messages for logging
+  - Modified Guardian.can_open_position() to call conflict check first
+
+- Files changed:
+  - bot/momentum_bot_v12.py (lines 720-780)
+    - New method: check_live_position_conflicts()
+    - Updated: can_open_position() to prioritize live API check
+  - test_conflict_check.py (new file for validation)
+
+- Learnings for future iterations:
+  - Guardian's internal position list (self.open_positions) was out of sync with blockchain
+  - Must query live Polymarket API to get current positions
+  - Position titles contain crypto name (e.g., "BTC will go up")
+  - Position outcome field contains direction ("Up" or "Down")
+  - Need to check for BOTH same direction AND opposite direction conflicts
+  - Positions with size < 0.01 should be ignored (negligible/rounding)
+  - API failures should not block trades (return False on error)
+  - The agent system already skips when ML mode active (line 2240 continue)
+
+- Gotchas encountered:
+  - Cannot easily parse exact epoch timestamp from position titles
+  - Using crypto + direction matching instead of epoch matching
+  - This is sufficient since we only trade 15-min markets
+  - API status code 400 means wallet not found or invalid params
+
+- Useful context:
+  - Polymarket Data API: https://data-api.polymarket.com/positions?user=WALLET
+  - Position structure: {title, outcome, size, curPrice, conditionId, ...}
+  - Guardian.can_open_position() is called at line 2178 before placing ML orders
+  - The conflict check happens BEFORE correlation/limit checks (highest priority)
 
 ---
 
