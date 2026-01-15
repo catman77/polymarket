@@ -237,7 +237,7 @@ DEPLOYMENT_MODES = {
 }
 
 # Current deployment mode
-CURRENT_MODE = 'moderate'  # Agents now control trading decisions
+CURRENT_MODE = 'conservative'  # RAISED Jan 15 - reduce low-quality trades (0.75/0.60 thresholds)
 
 
 def apply_mode(mode_name: str):
