@@ -69,6 +69,18 @@ try:
     SHADOW_TRADING_AVAILABLE = True
 except ImportError:
     pass  # Will log warning after logger initialization
+
+# ML Bot imports (for live ML trading)
+ML_BOT_AVAILABLE = False
+try:
+    from bot.ml_bot_adapter import get_ml_adapter
+    ML_BOT_AVAILABLE = True
+except ImportError:
+    try:
+        from ml_bot_adapter import get_ml_adapter
+        ML_BOT_AVAILABLE = True
+    except ImportError:
+        pass  # Will log warning after logger initialization
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs
 from py_clob_client.order_builder.constants import BUY, SELL
@@ -312,6 +324,12 @@ log = logging.getLogger(__name__)
 # Log agent system availability
 if not AGENT_SYSTEM_AVAILABLE:
     log.warning("⚠️  Agent system not available - using legacy logic only")
+
+# Log ML bot availability
+if not ML_BOT_AVAILABLE:
+    log.warning("⚠️  ML bot adapter not available - ML mode will not work")
+else:
+    log.info("✅ ML bot adapter loaded - set USE_ML_BOT=true to enable")
 
 # =============================================================================
 # RALPH REGIME ADAPTER - CONFIGURATION OVERRIDE SYSTEM
@@ -1981,18 +1999,68 @@ def run_bot():
                     log.info(f"    Time in epoch: {time_in_market_epoch}s / {interval}s")
 
                     # =================================================================
-                    # AGENT MODE - Expert consensus decision-making (ENABLED = agents control)
+                    # DECISION MODE - Check if ML Bot or Agent mode
                     # =================================================================
-                    if agent_system and agent_system.enabled:
-                        # Get market prices for agent analysis
-                        prices = get_market_prices(market.get("tokens", []))
-                        if "Up" not in prices or "Down" not in prices:
+                    # Get market prices (needed for both ML and agent modes)
+                    prices = get_market_prices(market.get("tokens", []))
+                    if "Up" not in prices or "Down" not in prices:
+                        continue
+
+                    # Get RSI (needed for both ML and agent modes)
+                    rsi_value = rsi_calc.get_rsi(crypto)
+
+                    # Check if ML mode is enabled
+                    use_ml_bot = os.getenv('USE_ML_BOT', 'false').lower() == 'true'
+
+                    if use_ml_bot and ML_BOT_AVAILABLE:
+                        # =================================================================
+                        # ML MODE - Random Forest predictions (ENABLED when USE_ML_BOT=true)
+                        # =================================================================
+                        try:
+                            ml_threshold = float(os.getenv('ML_THRESHOLD', '0.55'))
+                            ml_adapter = get_ml_adapter(threshold=ml_threshold)
+
+                            # Prepare market data for ML prediction
+                            market_data = {
+                                'crypto': crypto,
+                                'epoch': current_epoch,
+                                'datetime': datetime.now(),
+                                'up_price': prices['Up']['ask'],
+                                'down_price': prices['Down']['ask'],
+                                'rsi': rsi_value,
+                                'volatility': 0.0,  # Will be calculated by ML strategy
+                                'price_momentum': 0.0,  # Will be calculated by ML strategy
+                                'spread_proxy': abs(prices['Up']['ask'] - prices['Down']['ask']),
+                                'position_in_range': 0.5,  # Placeholder
+                                'price_z_score': 0.0,  # Will be calculated by ML strategy
+                                'epoch_sequence': 0,  # Will be calculated by ML strategy
+                                'is_market_open': 1 if datetime.now().hour >= 9 and datetime.now().hour < 16 else 0
+                            }
+
+                            # Get ML prediction
+                            ml_decision = ml_adapter.make_decision(crypto, current_epoch, market_data)
+
+                            # Map ML decision to agent-compatible variables
+                            agent_should_trade = ml_decision['should_trade']
+                            direction = ml_decision['direction']
+                            confidence = ml_decision['confidence']
+                            reason = ml_decision['reason']
+                            weighted_score = confidence  # Use ML confidence as weighted score
+
+                            log.info(f"\n🤖 [ML Bot] {crypto.upper()} decision: {'TRADE' if agent_should_trade else 'SKIP'}")
+                            if agent_should_trade:
+                                log.info(f"  Direction: {direction} | Confidence: {confidence:.1%}")
+                                log.info(f"  Reason: {reason}")
+
+                        except Exception as e:
+                            log.error(f"[ML Bot] Failed to get ML decision for {crypto}: {e}")
                             continue
 
-                    # Get RSI for agent analysis
-                        rsi_value = rsi_calc.get_rsi(crypto)
-
-                    # Ask agents to make decision
+                    elif agent_system and agent_system.enabled:
+                        # =================================================================
+                        # AGENT MODE - Expert consensus decision-making
+                        # =================================================================
+                        # Ask agents to make decision
                         try:
                             agent_should_trade, direction, confidence, reason, weighted_score = agent_system.make_decision(
                                 crypto=crypto,
@@ -2124,6 +2192,14 @@ def run_bot():
                             import traceback
                             log.error(f"  Traceback: {traceback.format_exc()}")
                         # Fall through to old bot logic if agents fail
+
+                    else:
+                        # Neither ML nor agents enabled
+                        if use_ml_bot and not ML_BOT_AVAILABLE:
+                            log.warning(f"[{crypto.upper()}] ML mode requested but ml_bot_adapter not available")
+                        elif not agent_system or not agent_system.enabled:
+                            log.debug(f"[{crypto.upper()}] Agents disabled, using fallback logic")
+                        # Fall through to old bot logic
 
                 # =================================================================
                 # LATE ONLY MODE - Simplified path, no confluence/trend needed

@@ -1,0 +1,8 @@
+To enable ML mode, set environment variable:
+
+export USE_ML_BOT=true
+
+Then restart the bot service:
+systemctl restart polymarket-bot
+
+This will replace agent consensus with ML Random Forest predictions.
