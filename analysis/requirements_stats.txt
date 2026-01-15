@@ -1,0 +1,24 @@
+# Statistical Analysis Requirements
+# Install with: pip install -r analysis/requirements_stats.txt
+
+# Core scientific computing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Statistical modeling
+statsmodels>=0.14.0
+
+# Machine learning
+scikit-learn>=1.3.0
+
+# Time series and regime detection
+hmmlearn>=0.3.0
+ruptures>=1.1.0
+
+# Data visualization (optional but recommended)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Database
+# (sqlite3 is built-in to Python)

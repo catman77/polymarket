@@ -368,6 +368,102 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0
         }
+    ),
+
+    # === TIME PATTERN STRATEGIES (Use historical hour-based patterns) ===
+
+    'time_pattern_pure': StrategyConfig(
+        name='time_pattern_pure',
+        description='Pure time-pattern agent (no tech/sentiment/regime)',
+        consensus_threshold=0.55,  # Single agent, require moderate strength
+        min_confidence=0.55,
+        min_individual_confidence=0.55,
+        agent_weights={
+            'TimePatternAgent': 1.0,  # Only agent
+            'TechAgent': 0.0,         # Disabled
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0
+        }
+    ),
+
+    'time_pattern_boost': StrategyConfig(
+        name='time_pattern_boost',
+        description='All agents + time pattern boost (5th agent)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TimePatternAgent': 0.5,  # Add as 5th agent with half weight
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0
+        }
+    ),
+
+    'time_pattern_heavy': StrategyConfig(
+        name='time_pattern_heavy',
+        description='Time patterns heavily weighted (2x other agents)',
+        consensus_threshold=0.45,
+        min_confidence=0.45,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TimePatternAgent': 2.0,  # Double weight vs others
+            'TechAgent': 1.0,
+            'SentimentAgent': 0.7,    # Reduce other agents slightly
+            'RegimeAgent': 0.7,
+            'CandlestickAgent': 0.7
+        }
+    ),
+
+    # === GAMBLER AGENT STRATEGIES (Probability veto) ===
+
+    'gambler_veto_enabled': StrategyConfig(
+        name='gambler_veto_enabled',
+        description='Default strategy + GamblerAgent veto (60% threshold)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0,
+            # GamblerAgent automatically added as veto agent in wrapper
+        }
+    ),
+
+    'time_pattern_gambler': StrategyConfig(
+        name='time_pattern_gambler',
+        description='TimePattern (0.5 weight) + GamblerAgent veto',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TimePatternAgent': 0.5,  # 5th voting agent (half weight)
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0,
+            # GamblerAgent automatically added as veto agent
+        }
+    ),
+
+    'time_pattern_pure_gambler': StrategyConfig(
+        name='time_pattern_pure_gambler',
+        description='ONLY TimePattern + GamblerAgent (isolate time patterns)',
+        consensus_threshold=0.55,  # Higher threshold for single agent
+        min_confidence=0.55,
+        min_individual_confidence=0.55,
+        agent_weights={
+            'TimePatternAgent': 1.0,  # Only voting agent
+            'TechAgent': 0.0,         # Disabled
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0,
+            # GamblerAgent automatically added as veto agent
+        }
     )
 }
 

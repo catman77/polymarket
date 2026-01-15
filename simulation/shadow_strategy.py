@@ -115,7 +115,8 @@ class ShadowStrategy:
             consensus_threshold=config.consensus_threshold,
             min_confidence=config.min_confidence,
             adaptive_weights=config.adaptive_weights,
-            enabled=True  # Shadow strategies always "trade" (hypothetically)
+            enabled=True,  # Shadow strategies always "trade" (hypothetically)
+            agent_weights=config.agent_weights  # Pass agent weights (includes TimePatternAgent if specified)
         )
         
         # Performance tracking

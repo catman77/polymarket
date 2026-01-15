@@ -11,6 +11,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from agents import TechAgent, RiskAgent, SentimentAgent, RegimeAgent, CandlestickAgent
+from agents.time_pattern_agent import TimePatternAgent
+from agents.gambler_agent import GamblerAgent
 from coordinator import DecisionEngine
 from config import agent_config
 import logging
@@ -58,7 +60,9 @@ class AgentSystemWrapper:
                  consensus_threshold: float = None,
                  min_confidence: float = None,
                  adaptive_weights: bool = None,
-                 enabled: bool = None):
+                 enabled: bool = None,
+                 agent_weights: dict = None,
+                 include_time_pattern: bool = None):
         """
         Initialize agent system.
 
@@ -67,6 +71,8 @@ class AgentSystemWrapper:
             min_confidence: Minimum average confidence (uses config if None)
             adaptive_weights: Enable performance-based weight tuning (uses config if None)
             enabled: If False, runs in LOG-ONLY mode (uses config if None)
+            agent_weights: Dict of agent weights (e.g., {'TechAgent': 1.0, 'TimePatternAgent': 0.5})
+            include_time_pattern: Whether to include TimePatternAgent (auto-detected from agent_weights if None)
         """
         # Load from config if not specified
         if consensus_threshold is None:
@@ -80,29 +86,60 @@ class AgentSystemWrapper:
 
         self.enabled = enabled
 
-        # Initialize agents
-        self.tech_agent = TechAgent(name="TechAgent", weight=1.0)
-        self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=1.0)
-        self.regime_agent = RegimeAgent(name="RegimeAgent", weight=1.0)
+        # Determine agent weights
+        if agent_weights is None:
+            agent_weights = {
+                'TechAgent': 1.0,
+                'SentimentAgent': 1.0,
+                'RegimeAgent': 1.0,
+                'CandlestickAgent': 1.0
+            }
+
+        # Auto-detect if TimePatternAgent should be included
+        if include_time_pattern is None:
+            include_time_pattern = 'TimePatternAgent' in agent_weights and agent_weights['TimePatternAgent'] > 0
+
+        # Initialize core agents
+        self.tech_agent = TechAgent(name="TechAgent", weight=agent_weights.get('TechAgent', 1.0))
+        self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=agent_weights.get('SentimentAgent', 1.0))
+        self.regime_agent = RegimeAgent(name="RegimeAgent", weight=agent_weights.get('RegimeAgent', 1.0))
         self.candle_agent = CandlestickAgent()  # Has its own default name
         self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
+        self.gambler_agent = GamblerAgent(name="GamblerAgent", weight=1.0)
 
-        # Initialize decision engine with 4 expert agents
+        # Build agent list
+        agents = [self.tech_agent, self.sentiment_agent, self.regime_agent, self.candle_agent]
+
+        # Optionally add TimePatternAgent
+        if include_time_pattern:
+            self.time_pattern_agent = TimePatternAgent(
+                name="TimePatternAgent",
+                weight=agent_weights.get('TimePatternAgent', 1.0)
+            )
+            agents.append(self.time_pattern_agent)
+            agent_count = "5 AGENTS"
+            agent_list = "Tech, Sentiment, Regime, Candlestick, TimePattern (+ Risk, Gambler veto)"
+        else:
+            self.time_pattern_agent = None
+            agent_count = "4 AGENTS"
+            agent_list = "Tech, Sentiment, Regime, Candlestick (+ Risk, Gambler veto)"
+
+        # Initialize decision engine
         self.engine = DecisionEngine(
-            agents=[self.tech_agent, self.sentiment_agent, self.regime_agent, self.candle_agent],
-            veto_agents=[self.risk_agent],
+            agents=agents,
+            veto_agents=[self.risk_agent, self.gambler_agent],
             consensus_threshold=consensus_threshold,
             min_confidence=min_confidence,
             adaptive_weights=adaptive_weights
         )
 
         log.info("=" * 60)
-        log.info("AGENT SYSTEM INITIALIZED - 4 AGENTS")
+        log.info(f"AGENT SYSTEM INITIALIZED - {agent_count}")
         log.info(f"  Mode: {'ENABLED' if enabled else 'LOG-ONLY'}")
         log.info(f"  Consensus Threshold: {consensus_threshold}")
         log.info(f"  Min Confidence: {min_confidence}")
         log.info(f"  Adaptive Weights: {adaptive_weights}")
-        log.info(f"  Agents: Tech, Sentiment, Regime, Candlestick (+ Risk veto)")
+        log.info(f"  Agents: {agent_list}")
         log.info("=" * 60)
 
     def make_decision(self,

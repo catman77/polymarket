@@ -1,0 +1,24 @@
+# Machine Learning Dependencies for Polymarket AutoTrader
+#
+# Install with: pip install -r analysis/requirements-ml.txt
+#
+
+# Core scientific computing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Machine learning
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Optional: Deep learning (if you want to experiment with neural networks)
+# tensorflow>=2.14.0
+# torch>=2.0.0
+
+# Optional: Advanced pattern mining
+# mlxtend>=0.22.0  # For advanced association rules

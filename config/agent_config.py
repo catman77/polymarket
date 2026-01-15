@@ -23,7 +23,10 @@ AGENT_WEIGHTS = {
     'TechAgent': 1.0,          # Technical analysis
     'SentimentAgent': 1.0,     # Contrarian signals
     'RegimeAgent': 1.0,        # Market classification
+    'CandlestickAgent': 1.0,   # Candlestick pattern analysis
+    'TimePatternAgent': 0.0,   # Historical hourly patterns (0.0 = disabled, set 0.5-1.0 to enable)
     'RiskAgent': 1.0,          # Risk management (veto)
+    'GamblerAgent': 1.0,       # Probability gating (veto)
 }
 
 # =============================================================================
@@ -291,28 +294,29 @@ ENABLE_SHADOW_TRADING = True  # Set False to disable simulation system
 # Shadow strategies to run in parallel (virtual trading for comparison)
 # Available strategies: conservative, aggressive, contrarian_focused,
 #                      momentum_focused, no_regime_adjustment, equal_weights_static,
-#                      high_confidence_only, low_barrier
+#                      high_confidence_only, low_barrier, time_pattern variants
 SHADOW_STRATEGIES = [
+    # Current live strategy
+    'default',                # Current production config (baseline for comparison)
+
     # Baseline (coin flip)
     'random_baseline',        # Random 50/50 trades (NO agents)
 
-    # Original strategies (kept for comparison)
+    # NEW: GamblerAgent + TimePattern strategies
+    'gambler_veto_enabled',   # Default + GamblerAgent veto (60% threshold)
+    'time_pattern_boost',     # Add TimePattern as 5th agent (0.5 weight)
+    'time_pattern_heavy',     # TimePattern with 2.0 weight (strong influence)
+    'time_pattern_pure',      # ONLY TimePattern (isolate performance)
+    'time_pattern_gambler',   # TimePattern + GamblerAgent (best of both)
+    'time_pattern_pure_gambler',  # Pure TimePattern + Gambler veto
+
+    # Original top performers (kept for comparison)
     'conservative',           # High thresholds (0.75/0.60) - fewer trades
-    'aggressive',             # Lower thresholds (0.55/0.45) - more trades
-
-    # Inverse strategies (trade OPPOSITE direction)
-    'inverse_consensus',      # Trade opposite of all agents
-    'inverse_momentum',       # Fade momentum signals
-    'inverse_sentiment',      # Go with crowd instead of fading
-
-    # Extreme thresholds
-    'ultra_conservative',     # Only perfect setups (0.85/0.75)
-    'ultra_aggressive',       # Take everything (0.25/0.25)
+    'contrarian_focused',     # Boost SentimentAgent for contrarian signals
 
     # Single agent isolation
     'tech_only',             # Technical/momentum only
     'sentiment_only',        # Contrarian/sentiment only
-    'regime_only',           # Market regime only
 ]
 
 # Shadow trading configuration

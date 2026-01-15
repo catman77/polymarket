@@ -1,0 +1,5 @@
+crypto,correlation_length_epochs,correlation_length_minutes,correlation_length_hours
+btc,1,15,0.25
+eth,1,15,0.25
+sol,1,15,0.25
+xrp,1,15,0.25
