@@ -378,20 +378,17 @@ def render_dashboard():
             print(f"    {pos['question']}")
             print(f"    Win Prob: [{bar}] {prob_pct:.1f}%")
 
-            # Try to get price to beat
-            slug = pos.get('slug')
-            if slug:
-                price_to_beat, current_price, direction = get_price_to_beat(slug, pos['outcome'])
-                if price_to_beat and current_price:
-                    diff = current_price - price_to_beat
-                    diff_pct = (diff / price_to_beat) * 100
+            # Show current crypto price and position status
+            outcome_parts = pos['outcome'].split()
+            if len(outcome_parts) >= 1:
+                crypto = outcome_parts[0]  # BTC, ETH, SOL, XRP
+                direction = pos['outcome'].split()[-1] if len(outcome_parts) > 1 else None  # Up or Down
 
-                    if direction == 'Up':
-                        status = "✅ WINNING" if diff > 0 else "❌ LOSING"
-                        print(f"    📊 Price to Beat: ${price_to_beat:,.2f} | Current: ${current_price:,.2f} | {status} by ${abs(diff):,.2f} ({abs(diff_pct):.2f}%)")
-                    elif direction == 'Down':
-                        status = "✅ WINNING" if diff < 0 else "❌ LOSING"
-                        print(f"    📊 Price to Beat: ${price_to_beat:,.2f} | Current: ${current_price:,.2f} | {status} by ${abs(diff):,.2f} ({abs(diff_pct):.2f}%)")
+                current_price = get_current_crypto_price(crypto)
+                if current_price and direction:
+                    # Show current price with position direction
+                    arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
+                    print(f"    📊 {crypto} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
 
             print(f"    Current Value: ${pos['current_value']:.2f} | If Win: ${pos['max_payout']:.2f} | Est. Invested: ${est_invested:.2f}")
 
