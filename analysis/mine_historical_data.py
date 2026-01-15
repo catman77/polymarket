@@ -97,24 +97,31 @@ class ExchangeDataMiner:
 
         return all_klines
 
-    def get_kraken_ohlc(self, symbol: str, start_time: int) -> List[dict]:
+    def get_kraken_ohlc(self, symbol: str, start_time: int, end_time: int = None, max_requests: int = 200) -> List[dict]:
         """
-        Get historical OHLC from Kraken.
+        Get historical OHLC from Kraken with multiple requests.
 
         Args:
             symbol: Kraken pair (e.g., XBTUSD)
             start_time: Start timestamp (seconds)
+            end_time: End timestamp (seconds), defaults to now
+            max_requests: Maximum API requests to make (default: 200 = ~60 days)
 
         Returns:
             List of OHLC dicts
         """
         url = 'https://api.kraken.com/0/public/OHLC'
 
+        if end_time is None:
+            end_time = int(time.time())
+
         all_candles = []
         current_start = start_time
+        request_count = 0
 
-        # Kraken returns up to 720 candles
-        for _ in range(100):  # Safety limit
+        # Kraken returns up to 720 candles per request
+        # 720 candles * 15 min = 10,800 minutes = 7.5 days per request
+        while request_count < max_requests and current_start < end_time:
             params = {
                 'pair': symbol,
                 'interval': 15,  # 15 minutes
@@ -127,7 +134,13 @@ class ExchangeDataMiner:
                 data = resp.json()
 
                 if data.get('error'):
-                    print(f"  ⚠️  Kraken API error: {data['error']}")
+                    error_msg = data['error']
+                    print(f"  ⚠️  Kraken API error: {error_msg}")
+                    # If rate limited, wait and retry
+                    if 'rate limit' in str(error_msg).lower():
+                        print(f"  ⏳ Rate limited, waiting 60s...")
+                        time.sleep(60)
+                        continue
                     break
 
                 result = data.get('result', {})
@@ -138,30 +151,50 @@ class ExchangeDataMiner:
 
                 candles = result[pair_key]
 
-                for candle in candles:
-                    all_candles.append({
-                        'timestamp': int(candle[0]),
-                        'open': float(candle[1]),
-                        'high': float(candle[2]),
-                        'low': float(candle[3]),
-                        'close': float(candle[4]),
-                        'volume': float(candle[6])
-                    })
+                if not candles:
+                    break
 
-                # Check if we got all data
+                for candle in candles:
+                    timestamp = int(candle[0])
+                    # Only add if within requested range
+                    if timestamp >= start_time and timestamp <= end_time:
+                        all_candles.append({
+                            'timestamp': timestamp,
+                            'open': float(candle[1]),
+                            'high': float(candle[2]),
+                            'low': float(candle[3]),
+                            'close': float(candle[4]),
+                            'volume': float(candle[6])
+                        })
+
+                # Get next batch start time
                 last_timestamp = result.get('last', 0)
-                if last_timestamp == current_start or len(candles) < 720:
+
+                # If we got less than 720, we've reached the end
+                if len(candles) < 720:
+                    print(f"  ℹ️  Reached end of available data (got {len(candles)} candles)")
+                    break
+
+                # If we're not making progress, break
+                if last_timestamp <= current_start:
+                    print(f"  ℹ️  No more historical data available")
                     break
 
                 current_start = last_timestamp
+                request_count += 1
 
-                # Rate limiting
-                time.sleep(1)
+                # Progress indicator
+                days_collected = len(all_candles) / 96
+                print(f"  Progress: {len(all_candles)} candles ({days_collected:.1f} days), {request_count} requests", end='\r')
+
+                # Rate limiting - Kraken allows ~1 request per second
+                time.sleep(1.5)
 
             except Exception as e:
                 print(f"  ⚠️  Kraken API error: {e}")
                 break
 
+        print()  # New line after progress indicator
         return all_candles
 
     def mine_historical_data(self, crypto: str, days: int, exchange: str = 'binance') -> List[Tuple]:
@@ -192,7 +225,10 @@ class ExchangeDataMiner:
                 print(f"  ⚠️  {crypto} not supported on Kraken")
                 return []
 
-            klines = self.get_kraken_ohlc(symbol, start_time)
+            # Calculate max_requests based on days requested
+            # 7.5 days per request, so requests = days / 7.5
+            max_requests = max(10, int(days / 7.5) + 5)
+            klines = self.get_kraken_ohlc(symbol, start_time, end_time, max_requests)
 
         else:
             print(f"  ⚠️  Unknown exchange: {exchange}")
