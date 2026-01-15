@@ -34,3 +34,27 @@
   - API responses: fundingRate, openInterest, volume from different endpoints
 ---
 
+## Iteration 3 - Add OrderBook + FundingRate to Shadow Strategies
+- Added OrderBookAgent and FundingRateAgent to shadow trading system
+- Files changed:
+  - config/agent_config.py (added OrderBookAgent + FundingRateAgent to AGENT_WEIGHTS)
+  - simulation/strategy_configs.py (updated all 24 existing strategies + added 6 new Phase 1 strategies)
+  - PRD.md (marked task complete)
+- New shadow strategies created:
+  - orderbook_focused (1.5x OrderBook weight)
+  - funding_rate_focused (1.5x FundingRate weight)
+  - phase1_combo (1.2x both new agents)
+  - orderbook_only (isolate OrderBook performance)
+  - funding_rate_only (isolate FundingRate performance)
+  - phase1_only (both new agents, no legacy)
+- Total shadow strategies: 18 (from 12)
+- Learnings for future iterations:
+  - Strategy configs use default_factory for agent_weights - must update both default AND all existing strategies
+  - Each strategy needs OrderBookAgent + FundingRateAgent added to agent_weights dict
+  - SHADOW_STRATEGIES list in agent_config.py controls which strategies run in parallel
+  - Isolating individual agents (X_only strategies) requires setting other agents to 0.0 weight
+  - Phase 1 strategies should have lower consensus thresholds (0.30-0.40) when using 1-2 agents
+  - All 30 strategy configs validated and loadable (tested with get_strategy())
+  - Shadow system now has 6 strategies specifically for testing new Phase 1 agents
+---
+

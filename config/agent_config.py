@@ -25,6 +25,8 @@ AGENT_WEIGHTS = {
     'RegimeAgent': 1.0,        # Market classification
     'CandlestickAgent': 1.0,   # Candlestick pattern analysis
     'TimePatternAgent': 0.5,   # Historical hourly patterns (ENABLED for live trading)
+    'OrderBookAgent': 0.8,     # Orderbook microstructure analysis (NEW - Phase 1)
+    'FundingRateAgent': 0.8,   # Derivatives funding rate analysis (NEW - Phase 1)
     'RiskAgent': 1.0,          # Risk management (veto)
     'GamblerAgent': 1.0,       # Probability gating (veto - blocks trades <60% win prob)
 }
@@ -294,7 +296,8 @@ ENABLE_SHADOW_TRADING = True  # Set False to disable simulation system
 # Shadow strategies to run in parallel (virtual trading for comparison)
 # Available strategies: conservative, aggressive, contrarian_focused,
 #                      momentum_focused, no_regime_adjustment, equal_weights_static,
-#                      high_confidence_only, low_barrier, time_pattern variants
+#                      high_confidence_only, low_barrier, time_pattern variants,
+#                      orderbook/funding_rate variants (Phase 1 NEW)
 SHADOW_STRATEGIES = [
     # Current live strategy
     'default',                # Current production config (baseline for comparison)
@@ -309,6 +312,14 @@ SHADOW_STRATEGIES = [
     'time_pattern_pure',      # ONLY TimePattern (isolate performance)
     'time_pattern_gambler',   # TimePattern + GamblerAgent (best of both)
     'time_pattern_pure_gambler',  # Pure TimePattern + Gambler veto
+
+    # PHASE 1: OrderBook + FundingRate agents (NEW - testing microstructure + derivatives signals)
+    'phase1_combo',           # Both new agents boosted (OrderBook 1.2x + FundingRate 1.2x)
+    'orderbook_focused',      # OrderBook 1.5x weight (test microstructure signals)
+    'funding_rate_focused',   # FundingRate 1.5x weight (test derivatives signals)
+    'orderbook_only',         # ONLY OrderBook (isolate performance)
+    'funding_rate_only',      # ONLY FundingRate (isolate performance)
+    'phase1_only',            # ONLY both new agents (no legacy agents)
 
     # Original top performers (kept for comparison)
     'conservative',           # High thresholds (0.75/0.60) - fewer trades

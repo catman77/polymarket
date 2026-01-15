@@ -448,7 +448,7 @@ CREATE TABLE alerts (
 - [x] Implement OrderBookAgent (imbalance, spread, depth)
 - [x] Implement FundingRateAgent (Binance futures API)
 - [x] Write unit tests
-- [ ] Add to shadow strategies
+- [x] Add to shadow strategies
 - [ ] Deploy to VPS
 - [ ] Monitor for 50+ trades each
 
