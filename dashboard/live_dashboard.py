@@ -80,7 +80,7 @@ def get_market_details(market_id):
         pass
     return None
 
-def get_price_to_beat(market_id, outcome):
+def get_price_to_beat(slug, outcome):
     """
     Get the price to beat (epoch start price) for a position.
 
@@ -90,9 +90,19 @@ def get_price_to_beat(market_id, outcome):
     Returns: (price_to_beat, current_crypto_price, direction_needed)
     """
     try:
-        market = get_market_details(market_id)
-        if not market:
+        # Fetch market by slug
+        resp = requests.get(
+            f'https://gamma-api.polymarket.com/markets?slug={slug}',
+            timeout=5
+        )
+        if resp.status_code != 200:
             return None, None, None
+
+        markets = resp.json()
+        if not markets:
+            return None, None, None
+
+        market = markets[0] if isinstance(markets, list) else markets
 
         # Extract crypto and direction from outcome (e.g., "BTC Up" or "SOL Down")
         parts = outcome.split()
@@ -203,7 +213,7 @@ def get_positions():
                 'resolved': resolved,
                 'closed': closed,
                 'redeemable': redeemable,
-                'market_id': market.get('id') if market else None
+                'slug': pos.get('slug')
             }
 
             if resolved:
@@ -369,9 +379,9 @@ def render_dashboard():
             print(f"    Win Prob: [{bar}] {prob_pct:.1f}%")
 
             # Try to get price to beat
-            market_id = pos.get('market_id')
-            if market_id:
-                price_to_beat, current_price, direction = get_price_to_beat(market_id, pos['outcome'])
+            slug = pos.get('slug')
+            if slug:
+                price_to_beat, current_price, direction = get_price_to_beat(slug, pos['outcome'])
                 if price_to_beat and current_price:
                     diff = current_price - price_to_beat
                     diff_pct = (diff / price_to_beat) * 100
