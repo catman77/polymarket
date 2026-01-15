@@ -470,3 +470,69 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 12 - US-016: Create alert_system module
+- What was implemented:
+  - Created analytics/alert_system.py with AlertSystem class
+  - Implemented check_win_rate_drop() - alerts if win rate <50% in last 20 trades
+  - Implemented check_balance_drop() - alerts if balance drops 20% from peak
+  - Implemented check_shadow_outperformance() - alerts if shadow +10% better with 100+ trades
+  - Implemented check_daily_loss_limit() - alerts if loss >$30 or >20% of balance
+  - Implemented check_agent_consensus_failure() - alerts if avg confidence <30% in last 10 trades
+  - Implemented run_all_checks() - runs all 5 alert checks with error handling
+  - Implemented send_alerts() - logs to file and prints to stdout
+  - Added CLI with --test flag for verification
+  
+- Files changed:
+  - analytics/alert_system.py (NEW - 504 lines)
+  - PRD.md (lines 325-342: Marked US-016 complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Alert severity levels: 'critical', 'warning', 'info' with emojis for visibility
+  - Alert dataclass pattern: severity, title, message, timestamp
+  - Database queries join outcomes table for win/loss (predicted_direction = actual_direction)
+  - State file has: current_balance, peak_balance, daily_pnl, day_start_balance
+  - Error handling per check prevents one failure from stopping all checks
+  - Test mode (--test) useful for verifying alert logging without real data
+  - Alert log appends (doesn't overwrite) for historical tracking
+
+- Key implementation details:
+  - 5 alert checks implemented:
+    1. Win rate drop: Last 20 trades <50% → critical
+    2. Balance drop: 20% from peak → warning
+    3. Shadow outperformance: +10% improvement, 100+ trades → info
+    4. Daily loss limit: $30 or 20% → critical
+    5. Agent consensus failure: Avg confidence <30% in last 10 → warning
+  - Alerts logged to logs/alerts.log with timestamps
+  - CLI supports custom paths: --db, --state, --log
+  - run_all_checks() wraps each check in try/except (isolated failures)
+  - send_alerts() outputs to both file and stdout
+
+- Alert message format:
+  - Emoji prefix based on severity (🚨 critical, ⚠️ warning, ℹ️ info)
+  - Timestamp in readable format (YYYY-MM-DD HH:MM:SS)
+  - Title summarizes issue
+  - Message provides: current values, thresholds, action required
+  
+- Testing results:
+  - Syntax check passed (py_compile)
+  - --test mode generates test alert successfully
+  - Alert logged to logs/alerts.log correctly
+  - --help shows usage and examples
+  - All 7 required methods verified to exist
+
+- What worked:
+  - Alert dataclass makes message formatting clean
+  - Separate check methods allow flexible usage (can call individually)
+  - CLI argparse with examples provides good UX
+  - Error handling per check prevents cascade failures
+  - Test mode useful for deployment verification
+
+- Next steps:
+  - US-017: Integrate into bot main loop (every 10 minutes)
+  - Wrap in try/except to prevent bot crashes
+  - Verify alerts appear in logs on VPS
+
+---
+
