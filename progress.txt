@@ -65,3 +65,15 @@ STATUS: ✅ Planning complete, ready for implementation
 - Document findings and win rate improvement
 
 **Target:** +2-3% win rate improvement by removing low-performing agents
+
+**PRD Structure:**
+- `PRD-strategic.md` = 4-week optimization roadmap (strategic overview)
+- `PRD.md` = Current week implementation (user stories: US-001, US-002, etc.)
+- Ralph loop compatible: Small stories, verifiable criteria, dependency-ordered
+
+**Current User Stories:**
+- US-001: ✅ Database schema (agent_performance, agent_votes_outcomes)
+- US-002: ✅ Agent performance tracker module
+- US-003: ✅ Agent enable/disable configuration
+- US-004: 🔄 IN PROGRESS - Integrate flags into bot initialization
+- US-005: ⏳ BLOCKED - Wait for 100+ trades, analyze performance

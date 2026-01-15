@@ -1,213 +1,128 @@
-# Performance Optimization PRD - Polymarket AutoTrader
+# PRD: Week 1 - Per-Agent Performance Tracking
 
-## Executive Summary
+## Introduction
 
-**Current State (Jan 15, 2026):**
-- Balance: $254.61
-- Win Rate: 56-60% (above 53% breakeven)
-- ML Random Forest bot operational
-- 7 agents deployed: Tech, Sentiment, Regime, Candlestick, TimePattern, OrderBook, FundingRate
-- Shadow testing: 27 strategies running in parallel
+Implement per-agent performance tracking to identify which of the 7 deployed agents (Tech, Sentiment, Regime, Candlestick, TimePattern, OrderBook, FundingRate) contribute positively vs negatively to overall win rate. This enables data-driven decisions to disable underperforming agents and improve win rate by 2-3%.
 
-**Goal:** Optimize existing system performance through data-driven improvements
+**Strategic Context:** See `PRD-strategic.md` for 4-week optimization roadmap.
 
-**Timeline:** 4 weeks (4 phases)
+## Goals
 
-**Target Metrics:**
-- Win Rate: 60-65% (from 56%)
-- Monthly ROI: +20-30% (from +10-20%)
-- Automated optimization: Continuous
+- Track individual agent vote accuracy (win rate per agent)
+- Identify underperforming agents (<50% win rate with 20+ votes)
+- Enable/disable agents based on performance data
+- Improve overall win rate by 2-3% by removing low-performers
 
----
+## User Stories
 
-## Current Architecture
+### US-001: Database schema for agent performance tracking
+**Description:** As a developer, I need database tables to store agent performance metrics so the system can track win rates per agent over time.
 
-### ML Bot
-- Algorithm: Random Forest Classifier
-- Test Accuracy: 67.3%
-- Live Win Rate: 56-60%
-- Features: 14 engineered features (price momentum, volatility, orderbook, regime)
+**Acceptance Criteria:**
+- [x] Add `agent_performance` table to `simulation/trade_journal.py`
+- [x] Table columns: agent_name, total_votes, correct_votes, incorrect_votes, win_rate, avg_confidence, last_updated
+- [x] Add `agent_votes_outcomes` table to link agent votes to trade outcomes
+- [x] Table columns: vote_id, agent_vote_id, outcome_id, was_correct, created_at
+- [x] Foreign keys properly defined
+- [x] Typecheck passes
 
-### Agent System
-- **TechAgent:** Price confluence across exchanges (Binance, Kraken, Coinbase)
-- **SentimentAgent:** Contrarian fade on overpriced sides (>70%)
-- **RegimeAgent:** Market regime detection (BULL/BEAR/CHOPPY)
-- **CandlestickAgent:** 15-minute candlestick patterns
-- **TimePatternAgent:** Intra-epoch timing signals
-- **OrderBookAgent:** Bid/ask spread and depth analysis
-- **FundingRateAgent:** Perpetual swap funding rates
-
-### Shadow Testing System
-- 27 parallel strategies running
-- Virtual trading (no real money risk)
-- Real-time performance comparison
-- Database: `simulation/trade_journal.db` (SQLite)
-
-### Position Sizing
-- Current: Fixed tiers (5-15% based on balance)
-- Next: Kelly Criterion (mathematically optimal)
-
-### Trading Thresholds
-- Current: 0.75 consensus, 0.60 confidence
-- Next: Test 0.80/0.70 for higher selectivity
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 
-## Phase 1: Per-Agent Performance Tracking (Week 1)
+### US-002: Agent performance tracker module
+**Description:** As a developer, I need a tool to analyze agent performance so I can identify which agents help vs hurt win rate.
 
-### Goal
-Identify which of the 7 agents contribute positively vs negatively to win rate.
+**Acceptance Criteria:**
+- [x] Create `analytics/agent_performance_tracker.py`
+- [x] Implement `update_agent_outcomes()` to match votes to outcomes
+- [x] Implement `calculate_agent_performance()` to compute win rates
+- [x] Implement `get_underperforming_agents(threshold, min_votes)`
+- [x] Implement `print_agent_report()` for CLI output
+- [x] Can run standalone: `python3 analytics/agent_performance_tracker.py`
+- [x] Typecheck passes
 
-### Tasks
-1. Create `analytics/agent_performance_tracker.py`
-2. Extend `simulation/trade_journal.py` schema
-3. Add agent enable/disable flags to `config/agent_config.py`
-4. Query and analyze agent performance
-5. Disable underperforming agents (<50% win rate)
-
-### Success Metrics
-- [ ] Tracking system operational (100+ trades logged)
-- [ ] 1-2 underperforming agents identified and disabled
-- [ ] Win rate improves by 1-2% after disabling bad agents
-
-### Expected Impact
-+2-3% win rate improvement by removing low-performing agents.
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 
-## Phase 2: Selective Trading Enhancement (Week 2)
+### US-003: Agent enable/disable configuration
+**Description:** As a developer, I need flags to enable/disable specific agents so I can turn off underperformers without code changes.
 
-### Goal
-Test higher thresholds (0.80/0.70) to reduce trade frequency but increase win rate.
+**Acceptance Criteria:**
+- [x] Add `AGENT_ENABLED` dict to `config/agent_config.py`
+- [x] Dict maps agent name to boolean (True = enabled, False = disabled)
+- [x] Add `get_enabled_agents()` helper function
+- [x] Document usage with comments
+- [x] Default: 7 agents enabled, 2 disabled (OnChain, Social - no API keys)
+- [x] Typecheck passes
 
-### Tasks
-1. Add "ultra_selective" strategy to `simulation/strategy_configs.py`
-2. Shadow test over 100+ trades
-3. Compare metrics: win rate, trade frequency, Sharpe ratio, drawdown
-4. If validated (win rate ≥65%, Sharpe ≥1.5): promote to live (staged 25% → 50% → 100%)
-5. If not validated: keep current thresholds, document learnings
-
-### Success Metrics
-- [ ] Shadow strategy tested (100+ trades)
-- [ ] If validated: win rate 65%+, 5-10 trades/day
-- [ ] If not: keep current thresholds
-
-### Expected Impact
-5-10 trades/day at 65%+ win rate (vs 15-20 trades/day at 56-60%).
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 
-## Phase 3: Kelly Criterion Position Sizing (Week 3)
+### US-004: Integrate agent flags into bot initialization
+**Description:** As a bot operator, I need the bot to respect AGENT_ENABLED flags so disabled agents don't participate in decisions.
 
-### Goal
-Implement mathematically optimal position sizing based on edge.
+**Acceptance Criteria:**
+- [ ] Import `get_enabled_agents()` in `bot/momentum_bot_v12.py`
+- [ ] Log enabled agents on startup
+- [ ] Filter agent initialization based on AGENT_ENABLED flags
+- [ ] Verify disabled agents (OnChain, Social) are NOT initialized
+- [ ] Verify agent votes only come from enabled agents
+- [ ] Typecheck passes
+- [ ] Test on VPS with logs showing enabled agents list
 
-### Tasks
-1. Create `bot/position_sizer.py` with Kelly Criterion logic
-2. Integrate into `Guardian.calculate_position_size()` in `bot/momentum_bot_v12.py`
-3. Shadow test Kelly sizing vs fixed sizing (100+ trades)
-4. Compare: ROI, Sharpe ratio, max drawdown, bankroll growth
-5. If validated (20-30% higher ROI, same drawdown): promote to live
-
-### Success Metrics
-- [ ] Kelly sizing implemented and shadow tested (100+ trades)
-- [ ] If validated: 20-30% higher ROI with same drawdown
-- [ ] If not: keep fixed sizing, document learnings
-
-### Expected Impact
-+10-20% ROI improvement by betting more on high-confidence trades, less on low-confidence.
+**Status:** 🔄 IN PROGRESS
 
 ---
 
-## Phase 4: Automated Optimization Infrastructure (Week 4)
+### US-005: Wait for 100+ trades and analyze performance
+**Description:** As a data analyst, I need to analyze agent performance after sufficient data collection so I can make statistically valid decisions.
 
-### Goal
-Build automated strategy promotion workflow + alert system for degradation.
+**Acceptance Criteria:**
+- [ ] Wait until `agent_performance` table has 100+ votes per agent
+- [ ] Run `python3 analytics/agent_performance_tracker.py`
+- [ ] Identify agents with win rate <50% and 20+ votes
+- [ ] Document findings in `progress.txt`
+- [ ] If underperformers found: Update `AGENT_ENABLED` to disable them
+- [ ] If no underperformers: Document that all agents performing well
+- [ ] Measure win rate change before/after disabling (target: +2-3%)
 
-### Tasks
+**Status:** ⏳ BLOCKED (waiting for data)
 
-#### 4A: Automated Strategy Promotion
-1. Create `simulation/auto_promoter.py`
-2. Logic: Auto-promote shadow strategies that beat live by 5%+ over 100 trades
-3. Staged rollout: 25% → 50% → 100% allocation
-4. Auto-rollback if win rate drops below 50%
-
-#### 4B: Alert System
-1. Create `analytics/alert_system.py`
-2. Alerts:
-   - Win rate drops below 50% (20-trade window)
-   - Balance drops 20%+ from peak
-   - Shadow strategy outperforms by 10%+ (100+ trades)
-   - Daily loss exceeds $30 or 20% of balance
-   - Agent consensus fails (all agents <30% confidence)
-3. Notifications: Log to file + optional email/Slack webhook
-
-### Success Metrics
-- [ ] Auto-promotion logic operational
-- [ ] Alert system preventing losses (caught ≥1 degradation event)
-- [ ] Continuous optimization running (no manual intervention)
-- [ ] Overall win rate: 60-65%
-- [ ] Monthly ROI: +20-30%
-
-### Expected Impact
-Continuous optimization without manual work. Early warnings prevent catastrophic losses.
+**Dependencies:**
+- Requires US-004 complete
+- Requires bot running for ~100+ trades (~2-3 days at 15-20 trades/day)
 
 ---
 
-## Risk Management
+## Non-Goals
 
-### Shadow Testing Protocol
-- All changes shadow tested first (100+ trades minimum)
-- Statistical significance required (chi-square p<0.05)
-- Staged rollout: 25% → 50% → 100%
-- Auto-rollback if win rate drops below 50%
+- No new agents added (focus on optimizing existing 7)
+- No changes to agent voting logic (just tracking + enable/disable)
+- No real-time agent performance updates during trading (analyzed post-mortem)
+- No automated agent disabling (manual review required)
 
-### Monitoring
-- Daily win rate checks (20-trade rolling window)
-- Balance tracking (alert on 20%+ drawdown)
-- Shadow strategy performance comparison
-- Per-agent contribution analysis
+## Technical Considerations
 
-### Rollback Plan
-- Keep old PRDs archived (can reference historical decisions)
-- Git history preserves all iterations
-- Config-driven changes (easy to revert via flags)
-- Shadow testing prevents production breakage
+**Database:**
+- Schema changes backward compatible (new tables, no alterations)
+- SQLite handles concurrent reads/writes with WAL mode
 
----
+**Analysis Requirements:**
+- Minimum 20 votes per agent for statistical significance
+- Chi-square test (p<0.05) recommended before disabling agents
+- Track win rate in 20-trade rolling window for early detection
 
-## Success Criteria
+**Bot Integration:**
+- Agent filtering happens at initialization (not per-decision)
+- Disabled agents consume zero resources (not instantiated)
+- Can enable/disable via config without code changes
 
-### Week 1
-- [ ] Per-agent tracking operational
-- [ ] 100+ trades logged with agent attribution
-- [ ] 1-2 underperforming agents identified and disabled
-- [ ] Win rate improves by 1-2%
+**Next Phase Preview:**
+- Week 2: Selective trading (test 0.80/0.70 thresholds)
+- Week 3: Kelly Criterion position sizing
+- Week 4: Automated promotion + alerts
 
-### Week 2
-- [ ] Higher threshold strategy tested (100+ trades)
-- [ ] If validated: win rate 65%+, fewer trades
-- [ ] If not: keep current thresholds
-
-### Week 3
-- [ ] Kelly sizing tested (100+ trades)
-- [ ] If validated: 20-30% higher ROI
-- [ ] If not: keep fixed sizing
-
-### Month End
-- [ ] Overall win rate: 60-65% (from 56%)
-- [ ] Monthly ROI: +20-30% (from +10-20%)
-- [ ] Automated promotion working
-- [ ] Alert system operational
-- [ ] Shadow testing continuous (5-10 strategies)
-
----
-
-## Open Questions (For Later)
-
-1. Should we enable OnChain/Social agents after validating existing 7?
-2. Are per-regime ML models worth the complexity?
-3. What's the optimal shadow strategy count (27 now)?
-4. Trade frequency vs quality - what's the optimal balance?
-
-**Decision:** Address these AFTER completing 4-week optimization roadmap.
+See `PRD-strategic.md` for full 4-week roadmap.

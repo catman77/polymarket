@@ -39,7 +39,8 @@ The bot now uses **ML Random Forest** model (as of Jan 15, 2026):
 **Current Focus:** Performance optimization (Jan 15, 2026)
 - Goal: Improve win rate from 56% to 60-65%
 - Approach: Per-agent tracking, selective trading, Kelly sizing, automated promotion
-- Timeline: 4-week optimization roadmap (see PRD.md)
+- Timeline: 4-week optimization roadmap (see `PRD-strategic.md`)
+- Current work: Week 1 implementation (see `PRD.md` for user stories)
 
 ---
 
@@ -429,7 +430,7 @@ Bot maintains persistent state in `state/trading_state.json`:
 - Monthly ROI: +20-30% (from +10-20%)
 - Automated: Yes (continuous optimization)
 
-**See PRD.md for full details.**
+**See `PRD-strategic.md` for full 4-week plan and `PRD.md` for current week's user stories.**
 
 ---
 
