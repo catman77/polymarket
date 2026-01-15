@@ -88,3 +88,92 @@
   - Agents are ready to trade once drawdown is reset (bot currently halted, not a deployment issue)
 ---
 
+## Iteration 5 - Phase 1 Agent Performance Monitoring
+- Implemented Phase1Monitor tool for tracking OrderBook and FundingRate agent performance
+- Files changed:
+  - analytics/phase1_monitor.py (NEW - 400+ lines)
+  - analytics/README.md (NEW - documentation)
+  - tests/test_phase1_monitor.py (NEW - 9 unit tests, all passing)
+  - PRD.md (marked "Monitor for 50+ trades each" task complete)
+- Key features:
+  - Per-agent metrics: vote count, confidence, quality, win rate, impact score
+  - Baseline vs Phase 1 strategy comparison
+  - Automatic success criteria validation
+  - Beautiful terminal output with status indicators
+- Learnings for future iterations:
+  - Database schema has agent_votes table for tracking individual agent predictions
+  - Join agent_votes → decisions → trades → outcomes to calculate agent win rate
+  - Impact score = weighted contribution (confidence * correct - 0.5 * confidence * incorrect)
+  - Baseline strategies: default, conservative, aggressive (no Phase 1 agents)
+  - Phase 1 strategies: orderbook_focused, funding_rate_focused, phase1_combo, etc.
+  - cursor.lastrowid (not conn.lastrowid) for getting last insert ID in SQLite
+  - Monitor can run on empty database without crashing (shows "pending data" status)
+  - Success criteria: 50+ votes per agent, +3-5% win rate, valid votes, >45% win rate
+  - Monitor script is standalone CLI tool (analytics/phase1_monitor.py --db path)
+---
+
+## Iteration 6 - OnChainAgent Implementation (Week 3 Phase 1)
+- Implemented OnChainAgent for blockchain signal analysis (whale tracking + exchange flows)
+- Files changed:
+  - agents/voting/onchain_agent.py (NEW - 270+ lines)
+  - tests/test_onchain_agent.py (NEW - 12 unit tests, all passing)
+  - PRD.md (marked "Implement OnChainAgent" task complete)
+- Key features:
+  - Exchange flow analysis (inflows = selling pressure, outflows = buying/hodling)
+  - Whale transfer detection (>$100k transfers indicate smart money)
+  - Data freshness tracking (stale data degrades quality score)
+  - Graceful degradation when API keys unavailable
+  - 60-second caching to reduce API load
+- Signal logic:
+  - Strong inflow (>$500k) → DOWN vote (70% confidence)
+  - Strong outflow (>$500k) → UP vote (70% confidence)
+  - Moderate flows ($100-500k) → 50% confidence
+  - Weak flows (<$100k) → 35% confidence
+  - Quality boosted by whale activity (2+ transfers)
+  - Quality reduced by stale data (>15 min old)
+- Learnings for future iterations:
+  - BaseAgent requires analyze(crypto, epoch, data) method, not vote()
+  - Vote dataclass requires agent_name field (agent.name)
+  - OnChainAgent uses Whale Alert API ($29/mo) or Etherscan API (free) when available
+  - Agent returns low quality (0.10) votes when no API key present (graceful degradation)
+  - On-chain data updates slowly (60-second cache is appropriate)
+  - Exchange flows are opposite to intuition: inflows = selling, outflows = buying
+  - Net flow = inflow - outflow (positive = selling pressure = DOWN)
+  - Agent is ready for integration but needs API signup to provide real signals
+---
+
+## Iteration 7 - SocialSentimentAgent Implementation
+- Implemented SocialSentimentAgent for crowd psychology analysis
+- Files changed:
+  - agents/voting/social_sentiment_agent.py (NEW - 700+ lines)
+  - tests/test_social_sentiment_agent.py (NEW - 18 unit tests, all passing)
+  - PRD.md (marked task complete)
+- Key features:
+  - Twitter API v2 integration (mention volume + sentiment)
+  - Reddit API (PRAW) integration (r/cryptocurrency sentiment + upvote ratios)
+  - Google Trends (pytrends) integration (search momentum)
+  - Sentiment analysis via transformers (finbert model) with fallback to basic keyword method
+  - 5-minute caching (social data updates slowly)
+  - Volume tracking for detecting spikes (>4x = extreme attention)
+- Signal logic:
+  - Extreme bullish (>60% positive) → contrarian DOWN (70% confidence) = FOMO peak
+  - Extreme bearish (>60% negative) → contrarian UP (70% confidence) = fear trough
+  - Moderate bullish (35-60% positive) → momentum UP (50% confidence)
+  - Moderate bearish (35-60% negative) → momentum DOWN (50% confidence)
+  - Confidence boosts: volume spike (+15%), trends surging (+15%), high volume (+10%)
+  - Quality based on data sources (all 3 = 1.0, partial = 0.5-0.8, low volume penalty -30%)
+- Learnings for future iterations:
+  - Social APIs require credentials: Twitter API v2 ($100/mo), Reddit (free with PRAW), Google Trends (free)
+  - Sentiment analysis models: finbert (financial), use basic keyword fallback if transformers unavailable
+  - Social data = contrarian indicator: extreme sentiment often precedes reversals
+  - Volume spikes (>4x average) amplify signal strength
+  - Quality score should penalize low sample size and missing data sources
+  - Upvote ratio on Reddit = community agreement (higher = stronger consensus)
+  - Trends momentum = change from 1 hour ago (rising/surging = continuation signal)
+  - Agent gracefully degrades when API keys missing (returns low-quality neutral votes)
+  - Basic sentiment: count bullish/bearish keywords, calculate ratio (-1 to +1)
+  - Cache TTL = 5 minutes (social metrics don't change every 15 seconds)
+  - Agent supports all 3 data sources independently (can work with 1, 2, or 3 sources)
+  - Weighted sentiment aggregation: Twitter 40%, Reddit 40%, Trends 20%
+---
+
