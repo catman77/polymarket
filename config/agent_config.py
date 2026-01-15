@@ -367,6 +367,10 @@ SHADOW_STRATEGIES = [
     'ml_random_forest_50',   # Random Forest with 50% threshold (trade all predictions)
     'ml_random_forest_55',   # Random Forest with 55% threshold (selective)
     'ml_random_forest_60',   # Random Forest with 60% threshold (high confidence only)
+
+    # WEEK 2: SELECTIVE TRADING STRATEGIES (Jan 15, 2026)
+    # Testing higher thresholds to improve win rate through quality over quantity
+    'ultra_selective',       # Higher thresholds (0.80/0.70) - target 65%+ win rate
 ]
 
 # Shadow trading configuration

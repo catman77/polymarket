@@ -792,6 +792,30 @@ STRATEGY_LIBRARY = {
         ml_model_name='random_forest',
         ml_threshold=0.60,  # Trade if win probability >= 60%
         agent_weights={}
+    ),
+
+    # =============================================================================
+    # WEEK 2: SELECTIVE TRADING STRATEGIES (Jan 15, 2026)
+    # =============================================================================
+    # Testing higher thresholds to improve win rate through quality over quantity
+
+    'ultra_selective': StrategyConfig(
+        name='ultra_selective',
+        description='Higher thresholds for quality over quantity (Week 2 optimization)',
+        consensus_threshold=0.80,  # Increased from 0.75 (conservative)
+        min_confidence=0.70,       # Increased from 0.60 (conservative)
+        min_individual_confidence=0.70,  # Increased from 0.40 (conservative)
+        adaptive_weights=True,
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0,
+            'OrderBookAgent': 0.8,
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        }
     )
 }
 

@@ -128,16 +128,16 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a strategy designer, I need a shadow strategy with higher thresholds so I can test if fewer, higher-quality trades improve win rate.
 
 **Acceptance Criteria:**
-- [ ] Add `ultra_selective` to `simulation/strategy_configs.py` STRATEGY_LIBRARY
-- [ ] Set consensus_threshold=0.80 (increased from 0.75)
-- [ ] Set min_confidence=0.70 (increased from 0.60)
-- [ ] Set min_viable_threshold=0.70 (increased from 0.40)
-- [ ] Keep adaptive_weights=True
-- [ ] Copy agent_weights from default strategy
-- [ ] Add strategy to SHADOW_STRATEGIES list in `config/agent_config.py`
-- [ ] Typecheck passes
+- [x] Add `ultra_selective` to `simulation/strategy_configs.py` STRATEGY_LIBRARY
+- [x] Set consensus_threshold=0.80 (increased from 0.75)
+- [x] Set min_confidence=0.70 (increased from 0.60)
+- [x] Set min_individual_confidence=0.70 (increased from 0.40)
+- [x] Keep adaptive_weights=True
+- [x] Copy agent_weights from default strategy
+- [x] Add strategy to SHADOW_STRATEGIES list in `config/agent_config.py`
+- [x] Typecheck passes
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 
