@@ -450,7 +450,7 @@ CREATE TABLE alerts (
 - [x] Write unit tests
 - [x] Add to shadow strategies
 - [x] Deploy to VPS
-- [ ] Monitor for 50+ trades each
+- [x] Monitor for 50+ trades each
 
 **Success Metric:** +3-5% win rate improvement in shadow testing
 
