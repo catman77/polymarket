@@ -1266,22 +1266,13 @@ class AutoRedeemer:
                 - epoch: int
                 - outcome: str (will be determined later by comparing with open_positions)
         """
-        current_epoch = (int(time.time()) // 900) * 900
-
-        if current_epoch == self.last_epoch:
-            return 0, []
-
-        time_since = int(time.time()) - current_epoch
-        if time_since < 60:
-            return 0, []
-
-        self.last_epoch = current_epoch
-
+        # FIX: Always check for redeemable positions, not just once per epoch
+        # Old positions from previous epochs can accumulate if not redeemed immediately
         positions = self.get_redeemable_positions()
         if not positions:
             return 0, []
 
-        log.info(f"Epoch ended - found {len(positions)} redeemable positions")
+        log.info(f"Found {len(positions)} redeemable positions to redeem")
 
         nonce = self.w3.eth.get_transaction_count(self.account.address)
         redeemed = 0
