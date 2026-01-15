@@ -2130,6 +2130,31 @@ def run_bot():
                     # Check if ML mode is enabled
                     use_ml_bot = os.getenv('USE_ML_BOT', 'false').lower() == 'true'
 
+                    # SHADOW TRADING: Broadcast market data to ALL shadow strategies (runs in both ML and agent modes)
+                    if orchestrator:
+                        try:
+                            market_data = {
+                                'prices': {
+                                    'btc': price_feed.current_prices.get('btc', 0),
+                                    'eth': price_feed.current_prices.get('eth', 0),
+                                    'sol': price_feed.current_prices.get('sol', 0),
+                                    'xrp': price_feed.current_prices.get('xrp', 0)
+                                },
+                                'orderbook': {
+                                    'yes': {'price': prices['Up']['ask']},
+                                    'no': {'price': prices['Down']['ask']}
+                                },
+                                'positions': guardian.open_positions,
+                                'balance': state.current_balance,
+                                'time_in_epoch': time_in_epoch,
+                                'rsi': rsi_value,
+                                'regime': tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
+                                'mode': state.mode
+                            }
+                            orchestrator.on_market_data(crypto, current_epoch, market_data)
+                        except Exception as e:
+                            log.error(f"Shadow trading broadcast failed: {e}")
+
                     if use_ml_bot and ML_BOT_AVAILABLE:
                         # =================================================================
                         # ML MODE - Random Forest predictions (ENABLED when USE_ML_BOT=true)
@@ -2298,31 +2323,6 @@ def run_bot():
                                 regime=tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
                                 mode=state.mode
                             )
-
-                            # SHADOW TRADING: Broadcast market data to shadow strategies
-                            if orchestrator:
-                                try:
-                                    market_data = {
-                                        'prices': {
-                                            'btc': price_feed.current_prices.get('btc', 0),
-                                            'eth': price_feed.current_prices.get('eth', 0),
-                                            'sol': price_feed.current_prices.get('sol', 0),
-                                            'xrp': price_feed.current_prices.get('xrp', 0)
-                                        },
-                                        'orderbook': {
-                                            'yes': {'price': prices['Up']['ask']},
-                                            'no': {'price': prices['Down']['ask']}
-                                        },
-                                        'positions': guardian.open_positions,
-                                        'balance': state.current_balance,
-                                        'time_in_epoch': time_in_epoch,
-                                        'rsi': rsi_value,
-                                        'regime': tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
-                                        'mode': state.mode
-                                    }
-                                    orchestrator.on_market_data(crypto, current_epoch, market_data)
-                                except Exception as e:
-                                    log.error(f"Shadow trading broadcast failed: {e}")
 
                         # If agents say SKIP, continue to next crypto
                             if not agent_should_trade:

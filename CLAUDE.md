@@ -1,8 +1,8 @@
 # Polymarket AutoTrader - AI Assistant Context
 
-**Last Updated:** 2026-01-14
-**Bot Version:** v12.1 (with Shadow Trading System)
-**Status:** Production - Trading Live on VPS with Shadow Strategy Testing
+**Last Updated:** 2026-01-15 18:30 UTC
+**Bot Version:** v12.1 (ML Random Forest + Shadow Trading System)
+**Status:** Production - Trading Live on VPS with ML Model
 
 ---
 
@@ -12,26 +12,27 @@
 
 ### Core Strategy
 
-The bot uses a **contrarian fade + momentum confirmation** approach:
+The bot now uses **ML Random Forest** model (as of Jan 15, 2026):
 
-1. **Contrarian Fade** - Identifies overpriced sides (>70%) and takes cheap entries on the opposite side (<$0.20)
-2. **Momentum Confirmation** - Confirms price movements across 3 exchanges (Binance, Kraken, Coinbase)
-3. **Risk Management** - Position sizing, correlation limits, drawdown protection
+1. **Machine Learning** - Random Forest trained on 711 samples, 67.3% test accuracy
+2. **High Confidence Filtering** - Only trades when ML confidence >55%
+3. **Risk Management** - Position sizing, conflict detection, drawdown protection
 
 ### Current Performance
 
-- **Live Balance:** $6.81 (as of Jan 15, 2026 12:30 UTC)
-- **Peak Balance:** $54.28 (Jan 15 AM)
-- **Status:** **HALTED** (87.5% drawdown triggered automatic halt)
+- **Live Balance:** $230.90 (as of Jan 15, 2026 18:00 UTC)
+- **Peak Balance:** $365.58 (Jan 15 PM, after fixes and recovery)
+- **Status:** ✅ **ACTIVE** - Trading autonomously
 - **Recent Events:**
-  - Jan 15 Overnight: -87.5% loss ($54.28 → $6.81) in ~18 hours
-  - Root causes: Low confidence trades (18-19% avg), Phase 1 agents unvalidated before live deployment
-  - Trend filter bias from Jan 14 was FIXED but new issues emerged
-- **Current Status:** Bot is HALTED, awaiting:
-  1. Peak balance reset to $6.81 (exit HALTED mode)
-  2. Threshold increase to 0.75/0.60 (reduce risk)
-  3. Shadow database debugging (Priority 1)
-- **Shadow Trading:** Infrastructure built but trade_journal.db is EMPTY (no validation data collected)
+  - Jan 15 16:00: Deployed all critical fixes (P0-P3 complete)
+  - Jan 15 17:42: Reset peak balance, bot unhalted and resumed trading
+  - Jan 15 18:00: System stable, 3 open positions (ETH Up, SOL Up, ETH Down)
+- **Critical Fixes Applied:**
+  - ✅ Position conflict detection (live API checking)
+  - ✅ Auto-redemption fixed (checks every cycle)
+  - ✅ Trade logging working (direct SQLite writes)
+  - ✅ Pure ML mode (no agent fallback)
+- **Shadow Trading:** Enabled with 23 strategies but not logging decisions (needs debugging)
 - **Trading Since:** January 2026
 - **Deployment:** Vultr VPS (Mexico City) - 24/7 operation
 
@@ -589,6 +590,29 @@ SCAN_INTERVAL = 2.0  # seconds
 - **IP:** 216.238.85.11
 - **OS:** Ubuntu 24.04 LTS
 - **SSH Key:** `~/.ssh/polymarket_vultr`
+
+### VPS Access for Claude
+
+**IMPORTANT:** Claude has full SSH access to the VPS and can run commands remotely:
+
+```bash
+# Direct SSH commands (preferred method)
+ssh root@216.238.85.11 "command here"
+
+# Examples:
+ssh root@216.238.85.11 "tail -100 /opt/polymarket-autotrader/bot.log"
+ssh root@216.238.85.11 "systemctl status polymarket-bot"
+ssh root@216.238.85.11 "python3 /opt/polymarket-autotrader/scripts/analyze.py"
+```
+
+**Key capabilities:**
+- Read bot logs directly from VPS
+- Check systemd service status
+- Run analysis scripts on live data
+- Monitor real-time trading activity
+- Debug issues without manual intervention
+
+**Note:** Always use full paths when running scripts on VPS (e.g., `/opt/polymarket-autotrader/bot.log`)
 
 ### Services Running
 
