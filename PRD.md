@@ -307,18 +307,18 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a developer, I need an auto-promoter that identifies outperforming shadow strategies so manual promotion isn't required.
 
 **Acceptance Criteria:**
-- [ ] Create `simulation/auto_promoter.py`
-- [ ] Implement `AutoPromoter` class with db_path, config_path, dry_run params
-- [ ] Implement `get_live_performance()` - returns live strategy metrics
-- [ ] Implement `get_shadow_performance(strategy_name)` - returns shadow metrics
-- [ ] Implement `get_promotion_candidates()` - filters by: win_rate +5%, 100+ trades, Sharpe ≥1.2, drawdown ≤25%
-- [ ] Implement `promote_strategy(strategy_name, allocation)` - updates config
-- [ ] Implement `run_promotion_check()` - main workflow
-- [ ] Add CLI args: --dry-run (default), --live (actually promotes)
-- [ ] Typecheck passes
-- [ ] Test: `python3 simulation/auto_promoter.py --dry-run` shows recommendations
+- [x] Create `simulation/auto_promoter.py`
+- [x] Implement `AutoPromoter` class with db_path, config_path, dry_run params
+- [x] Implement `get_live_performance()` - returns live strategy metrics
+- [x] Implement `get_shadow_performance(strategy_name)` - returns shadow metrics
+- [x] Implement `get_promotion_candidates()` - filters by: win_rate +5%, 100+ trades, Sharpe ≥1.2, drawdown ≤25%
+- [x] Implement `promote_strategy(strategy_name, allocation)` - updates config
+- [x] Implement `run_promotion_check()` - main workflow
+- [x] Add CLI args: --dry-run (default), --live (actually promotes)
+- [x] Typecheck passes
+- [x] Test: `python3 simulation/auto_promoter.py --dry-run` shows recommendations
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 

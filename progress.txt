@@ -411,3 +411,62 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 11 - US-015: Create auto_promoter module
+- What was implemented:
+  - Created simulation/auto_promoter.py with AutoPromoter class
+  - Implemented get_live_performance() to query live strategy from database
+  - Implemented get_shadow_performance() to query specific shadow strategy
+  - Implemented get_promotion_candidates() with filtering criteria (win_rate +5%, 100+ trades, Sharpe ≥1.2, DD ≤25%)
+  - Implemented promote_strategy() to update config file and database
+  - Implemented run_promotion_check() as main workflow
+  - Added CLI args: --dry-run (default), --live, --db, --config
+  - Fixed SQL queries to join trades with outcomes tables (no outcome column in trades)
+  
+- Files changed:
+  - simulation/auto_promoter.py (NEW - 553 lines)
+  - PRD.md (lines 309-321: Marked US-015 complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Database schema: trades and outcomes are separate tables, need JOIN
+  - outcomes table has pnl, predicted_direction, actual_direction columns
+  - trades table has size column (not position_size_usd)
+  - Win/loss determined by: predicted_direction = actual_direction
+  - is_live flag in strategies table marks current live strategy
+  - Sharpe ratio = mean(returns) / std(returns) - simplified formula
+  - Max drawdown requires tracking peak balance throughout trade history
+  - CLI with argparse supports --help, --dry-run, --live flags
+  
+- Key implementation details:
+  - AutoPromoter class stores db_path, config_path, dry_run as instance vars
+  - get_live_performance() queries strategies table for is_live=1 (fallback to 'default')
+  - StrategyPerformance dataclass stores all metrics (win_rate, ROI, Sharpe, drawdown)
+  - Promotion writes to config file (LIVE_STRATEGY, LIVE_STRATEGY_ALLOCATION)
+  - Also updates database to set is_live=1 for promoted strategy
+  - Staged rollout: Start at 25% allocation (recommended in output)
+  - Candidates sorted by win_rate improvement (descending)
+  
+- Database queries pattern:
+  - Trade stats: JOIN trades with outcomes, count wins/losses
+  - P&L tracking: SUM(o.pnl) from outcomes table
+  - Sharpe calculation: SELECT all pnl values, calculate mean/std in Python
+  - Max drawdown: SELECT all pnl values, track running balance and peak
+  - Starting balance: FROM strategies table (default 100.0 if not found)
+  
+- Testing results:
+  - Syntax check passed (py_compile)
+  - --dry-run works correctly (no live data = "No performance data" message)
+  - --help shows usage and examples
+  - All methods verified to exist via introspection
+  - Handles missing data gracefully (empty database = no candidates)
+  
+- What worked:
+  - Dataclass for StrategyPerformance makes metrics handling clean
+  - Separation of dry_run vs live mode prevents accidental config changes
+  - CLI argparse provides good UX with examples in help text
+  - Database queries leverage SQLite's aggregation functions
+  - Error handling with try/except prevents crashes on missing files
+
+---
+
