@@ -54,7 +54,7 @@ def get_current_epoch_time():
 def get_bot_state():
     """Read bot trading state."""
     try:
-        with open('/opt/polymarket-bot/v12_state/trading_state.json', 'r') as f:
+        with open('/opt/polymarket-autotrader/v12_state/trading_state.json', 'r') as f:
             return json.load(f)
     except:
         return None
@@ -62,7 +62,7 @@ def get_bot_state():
 def get_ralph_state():
     """Read Ralph regime state."""
     try:
-        with open('/opt/polymarket-bot/.ralph_regime_state.json', 'r') as f:
+        with open('/opt/polymarket-autotrader/.ralph_regime_state.json', 'r') as f:
             return json.load(f)
     except:
         return None
