@@ -323,3 +323,36 @@
   - Next steps: document features, create live trading integration, address overfitting in model training
 ---
 
+## Iteration 12 - Feature Documentation (Week 4-5 Phase 3)
+- Documented all 14 ML features with comprehensive definitions
+- Files changed:
+  - ml/FEATURES.md (NEW - 500+ lines of documentation)
+  - PRD.md (marked "Document feature definitions" complete)
+- Documentation includes:
+  - Detailed descriptions of all 14 features (5 time, 6 price, 3 cross-asset)
+  - Calculation formulas and code snippets
+  - Feature importance rankings from Random Forest analysis
+  - Interpretation guidelines for each feature
+  - Data pipeline explanation (2,884 → 711 samples)
+  - Known issues and future improvements
+  - Usage examples for training and live trading
+- Key insights documented:
+  - market_wide_direction dominates (79.87% importance)
+  - Cross-asset features >> Price features >> Time features
+  - 75% data loss from 50-period rolling windows
+  - 100% training accuracy indicates overfitting
+  - Top 5 features account for 97% of predictive power
+- Learnings for future iterations:
+  - Comprehensive documentation should include: formulas, examples, interpretations, importance
+  - Feature engineering documentation is critical for live trading integration
+  - Document known issues upfront (overfitting, data loss, redundancy)
+  - Include category-level summaries (time/price/cross-asset breakdown)
+  - Document the full pipeline: raw data → features → train/val/test split → output
+  - Usage examples help future developers integrate features
+  - List low-importance features explicitly (candidates for removal)
+  - Document discrepancies: importance report shows 13 features, but 14 exist (hour missing from report)
+  - Future improvements section guides next iterations
+  - Feature expansion roadmap (14 → 50+ features) should be documented
+  - Next step: create live trading feature extraction module
+---
+
