@@ -71,7 +71,7 @@ class SimulationOrchestrator:
         """
         Called when new market data arrives (every scan cycle).
         Broadcasts to all shadow strategies.
-        
+
         Args:
             crypto: Cryptocurrency (btc, eth, sol, xrp)
             epoch: Current epoch timestamp
@@ -84,51 +84,79 @@ class SimulationOrchestrator:
                 - rsi: Current RSI
                 - regime: Market regime
                 - mode: Trading mode
-        
+
         Returns:
             List of decision dicts from all strategies
         """
         decisions = []
-        
-        for name, strategy in self.strategies.items():
-            # Get decision from strategy
-            decision = strategy.make_decision(crypto, epoch, market_data)
-            decisions.append(decision)
-            
-            # Log decision to database
-            decision_id = self.db.log_decision(
-                strategy=decision['strategy'],
-                crypto=decision['crypto'],
-                epoch=decision['epoch'],
-                should_trade=decision['should_trade'],
-                direction=decision['direction'],
-                confidence=decision['confidence'],
-                weighted_score=decision['weighted_score'],
-                reason=decision['reason'],
-                balance_before=decision['balance_before']
-            )
-            
-            # Execute trade if decision is positive
-            if decision['should_trade']:
-                strategy.execute_trade(decision, market_data)
 
-                # Log trade to database (use tuple key)
-                position_key = (crypto, epoch)
-                if position_key in strategy.positions:
-                    pos = strategy.positions[position_key]
-                    self.db.log_trade(
-                        decision_id=decision_id,
-                        strategy=name,
-                        crypto=crypto,
-                        epoch=epoch,
-                        direction=pos.direction,
-                        entry_price=pos.entry_price,
-                        size=pos.size,
-                        shares=pos.shares,
-                        confidence=pos.confidence,
-                        weighted_score=pos.weighted_score
-                    )
-        
+        # DEBUG: Log that this function was called
+        log.info(f"[Shadow] on_market_data() called: {crypto.upper()} epoch {epoch}")
+
+        for name, strategy in self.strategies.items():
+            try:
+                # Get decision from strategy
+                decision = strategy.make_decision(crypto, epoch, market_data)
+                decisions.append(decision)
+
+                # DEBUG: Log decision before database write
+                log.debug(f"[Shadow] {name}: {decision['should_trade']} trade={decision['direction']} conf={decision['confidence']:.2f}")
+
+                # Log decision to database
+                decision_id = self.db.log_decision(
+                    strategy=decision['strategy'],
+                    crypto=decision['crypto'],
+                    epoch=decision['epoch'],
+                    should_trade=decision['should_trade'],
+                    direction=decision['direction'],
+                    confidence=decision['confidence'],
+                    weighted_score=decision['weighted_score'],
+                    reason=decision['reason'],
+                    balance_before=decision['balance_before']
+                )
+
+                # DEBUG: Confirm database write
+                if decision_id > 0:
+                    log.debug(f"[Shadow] Logged decision ID {decision_id} for {name}")
+                else:
+                    log.warning(f"[Shadow] Failed to log decision for {name} (decision_id={decision_id})")
+
+                # Execute trade if decision is positive
+                if decision['should_trade']:
+                    strategy.execute_trade(decision, market_data)
+
+                    # Log trade to database (use tuple key)
+                    position_key = (crypto, epoch)
+                    if position_key in strategy.positions:
+                        pos = strategy.positions[position_key]
+                        trade_id = self.db.log_trade(
+                            decision_id=decision_id,
+                            strategy=name,
+                            crypto=crypto,
+                            epoch=epoch,
+                            direction=pos.direction,
+                            entry_price=pos.entry_price,
+                            size=pos.size,
+                            shares=pos.shares,
+                            confidence=pos.confidence,
+                            weighted_score=pos.weighted_score
+                        )
+
+                        # DEBUG: Confirm trade logging
+                        if trade_id > 0:
+                            log.info(f"[Shadow] {name} TRADE: {pos.direction} {crypto.upper()} @ ${pos.entry_price:.2f} x {pos.shares:.1f} shares (trade_id={trade_id})")
+                        else:
+                            log.warning(f"[Shadow] Failed to log trade for {name} (trade_id={trade_id})")
+
+            except Exception as e:
+                log.error(f"[Shadow] Error processing {name} decision: {e}")
+                import traceback
+                traceback.print_exc()
+
+        # DEBUG: Summary
+        trade_count = sum(1 for d in decisions if d['should_trade'])
+        log.info(f"[Shadow] Processed {len(decisions)} decisions ({trade_count} trades) for {crypto.upper()}")
+
         return decisions
     
     def on_epoch_resolution(self, crypto: str, epoch: int, outcome: str):
