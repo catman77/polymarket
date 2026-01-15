@@ -446,7 +446,7 @@ CREATE TABLE alerts (
 
 **Tasks:**
 - [x] Implement OrderBookAgent (imbalance, spread, depth)
-- [ ] Implement FundingRateAgent (Binance futures API)
+- [x] Implement FundingRateAgent (Binance futures API)
 - [x] Write unit tests
 - [ ] Add to shadow strategies
 - [ ] Deploy to VPS
