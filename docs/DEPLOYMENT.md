@@ -391,6 +391,80 @@ systemctl restart polymarket-bot
 # If not, roll forward: git checkout main
 ```
 
+## Automated Services
+
+### Alert System
+
+The bot includes a built-in alert system that runs every 10 minutes to detect performance issues:
+
+- **Win rate drops** below 50% (last 20 trades)
+- **Balance drops** 20% from peak
+- **Daily loss limits** exceeded ($30 or 20% of balance)
+- **Agent consensus failures** (low confidence trades)
+- **Shadow strategy outperformance** (better alternatives available)
+
+Alerts are logged to `logs/alerts.log` and printed to bot logs with 🔔 emoji.
+
+**Verification:**
+```bash
+# Check alert system status
+grep "Alert System" bot.log
+
+# View alerts
+tail -f logs/alerts.log
+```
+
+### Auto-Promoter (Daily)
+
+The auto-promoter automatically identifies and promotes high-performing shadow strategies.
+
+**Setup:**
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs daily at 00:00 UTC):
+0 0 * * * cd /opt/polymarket-autotrader && python3 simulation/auto_promoter.py --live >> logs/auto_promoter.log 2>&1
+```
+
+**Verification:**
+```bash
+# View auto-promoter logs
+tail -f logs/auto_promoter.log
+
+# Test manually (dry-run):
+python3 simulation/auto_promoter.py --dry-run
+
+# Run live promotion check:
+python3 simulation/auto_promoter.py --live
+```
+
+**Promotion Criteria:**
+- Shadow strategy has 100+ trades
+- Win rate +5% better than live strategy
+- Sharpe ratio ≥1.2
+- Max drawdown ≤25%
+
+**Staged Rollout:**
+- Starts at 25% allocation
+- Increases to 50% after 50 successful trades
+- Increases to 100% after 50 more trades
+- Auto-rollback if performance drops
+
+### Cron Job Summary
+
+Current automated jobs:
+```bash
+# View all cron jobs
+crontab -l
+```
+
+Expected output:
+```
+0 * * * * /opt/polymarket-autotrader/analysis/cron_update_dataset.sh >> /opt/polymarket-autotrader/analysis/dataset_update.log 2>&1
+0 0 * * * cd /opt/polymarket-autotrader && python3 simulation/auto_promoter.py --live >> logs/auto_promoter.log 2>&1
+```
+
 ## Monitoring Alerts (Optional)
 
 ### Email on Halt

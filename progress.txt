@@ -648,3 +648,65 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+
+## Iteration 15 - US-018: Schedule auto-promoter daily checks
+- What was implemented:
+  - Added cron job to VPS crontab (runs daily at 00:00 UTC)
+  - Command: `cd /opt/polymarket-autotrader && python3 simulation/auto_promoter.py --live >> logs/auto_promoter.log 2>&1`
+  - Tested manually with --dry-run (works correctly)
+  - Verified log file creation at logs/auto_promoter.log
+  - Documented automated services in docs/DEPLOYMENT.md
+
+- Files changed:
+  - VPS crontab (added line: `0 0 * * * cd /opt/polymarket-autotrader && python3 simulation/auto_promoter.py --live >> logs/auto_promoter.log 2>&1`)
+  - docs/DEPLOYMENT.md (lines 394-466: Added "Automated Services" section)
+  - PRD.md (lines 377-395: Marked US-018 complete with verification)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Cron syntax: `minute hour day month dayofweek command`
+  - 0 0 * * * = Every day at midnight (00:00 UTC)
+  - Always test cron command manually before scheduling
+  - Use >> for append, 2>&1 to capture stderr
+  - cd before python ensures correct working directory
+  - Crontab -l shows existing jobs, use { cat; echo 'new'; } | crontab - to add
+  - Log files created on first run (not before)
+
+- Key implementation details:
+  - Auto-promoter runs daily at 00:00 UTC
+  - Checks for shadow strategies outperforming live strategy
+  - Requires 100+ trades, +5% win rate, Sharpe ≥1.2, drawdown ≤25%
+  - Promotes in stages: 25% → 50% → 100% allocation
+  - Logs to logs/auto_promoter.log
+  - --dry-run tests without making changes
+  - --live actually promotes strategies
+
+- Cron job verification:
+  - Timestamp: 2026-01-15 22:30 UTC (cron job added)
+  - Crontab shows 2 jobs: dataset update (hourly), auto-promoter (daily)
+  - Manual test successful: "No live strategy performance data" (expected)
+  - Log file created: logs/auto_promoter.log
+  - First automated run: Tonight at 00:00 UTC (Jan 16, 2026)
+
+- Documentation added:
+  - Alert system description (runs every 10 minutes)
+  - Auto-promoter setup instructions
+  - Promotion criteria and staged rollout process
+  - Cron job summary with expected output
+  - Verification commands for both services
+
+- What worked:
+  - Cron job syntax correct and tested
+  - Manual dry-run confirms command works
+  - Log redirection working (>> logs/auto_promoter.log)
+  - Documentation comprehensive and clear
+  - No conflicts with existing cron jobs
+
+- Next steps:
+  - Wait for first automated run tonight (00:00 UTC)
+  - Monitor logs/auto_promoter.log tomorrow
+  - Verify promotions work when criteria met (100+ trades)
+  - US-019: End-to-end validation after 100+ trades collected
+
+---
