@@ -70,6 +70,14 @@ try:
 except ImportError:
     pass  # Will log warning after logger initialization
 
+# Trade journal imports (for ML trade logging)
+TRADE_JOURNAL_AVAILABLE = False
+try:
+    from simulation.trade_journal import TradeJournal
+    TRADE_JOURNAL_AVAILABLE = True
+except ImportError:
+    pass  # Will log warning after logger initialization
+
 # ML Bot imports (for live ML trading)
 ML_BOT_AVAILABLE = False
 try:
@@ -1802,6 +1810,19 @@ def run_bot():
     else:
         log.warning("Shadow trading module not available")
 
+    # Initialize trade journal for ML trade logging
+    trade_journal = None
+    if TRADE_JOURNAL_AVAILABLE:
+        try:
+            journal_path = Path(__file__).parent.parent / "simulation" / "trade_journal.db"
+            trade_journal = TradeJournal(db_path=str(journal_path))
+            log.info(f"📝 Trade Journal: Connected to {journal_path.name}")
+        except Exception as e:
+            log.warning(f"Trade journal init failed: {e}")
+            trade_journal = None
+    else:
+        log.warning("Trade journal module not available")
+
     # Track bets per epoch
     epoch_trades: Dict[str, Dict[int, List[str]]] = {c: {} for c in CRYPTOS}
     epoch_bet_placed: Dict[int, bool] = {}
@@ -2123,6 +2144,26 @@ def run_bot():
                                 }
                                 guardian.add_position(position_data)
                                 state.last_trade_time = time.time()
+
+                                # Log ML trade to database
+                                if trade_journal:
+                                    try:
+                                        # Register strategy if not exists (live ML bot)
+                                        strategy_name = f"ml_live_{strategy}"  # e.g., "ml_live_ml_random_forest"
+
+                                        # Log the trade
+                                        trade_journal.log_trade(
+                                            strategy=strategy_name,
+                                            crypto=crypto,
+                                            epoch=current_epoch,
+                                            direction=direction,
+                                            entry_price=entry_price,
+                                            shares=shares,
+                                            confidence=confidence
+                                        )
+                                        log.debug(f"  [Journal] Logged {strategy_name} trade to database")
+                                    except Exception as e:
+                                        log.warning(f"  [Journal] Failed to log trade: {e}")
 
                             # Continue to next crypto (skip old bot logic)
                             continue
