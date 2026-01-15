@@ -80,6 +80,76 @@ def get_market_details(market_id):
         pass
     return None
 
+def get_price_to_beat(market_id, outcome):
+    """
+    Get the price to beat (epoch start price) for a position.
+
+    For Up: Need crypto to end ABOVE start price
+    For Down: Need crypto to end BELOW start price
+
+    Returns: (price_to_beat, current_crypto_price, direction_needed)
+    """
+    try:
+        market = get_market_details(market_id)
+        if not market:
+            return None, None, None
+
+        # Extract crypto and direction from outcome (e.g., "BTC Up" or "SOL Down")
+        parts = outcome.split()
+        if len(parts) < 2:
+            return None, None, None
+
+        crypto = parts[0]  # BTC, ETH, SOL, XRP
+        direction = parts[1]  # Up or Down
+
+        # Get epoch start price from market metadata
+        # The market should have start_price or we can infer from question
+        question = market.get('question', '')
+
+        # Try to extract start price from question
+        # Example: "Will BTC be higher than $43,521.50 at 9:15 PM?"
+        import re
+        price_match = re.search(r'\$([0-9,]+\.?\d*)', question)
+        if price_match:
+            start_price = float(price_match.group(1).replace(',', ''))
+
+            # Get current crypto price
+            current_price = get_current_crypto_price(crypto)
+
+            return start_price, current_price, direction
+
+    except Exception as e:
+        pass
+
+    return None, None, None
+
+def get_current_crypto_price(crypto):
+    """Get current price for a crypto from Binance."""
+    try:
+        symbol_map = {
+            'BTC': 'BTCUSDT',
+            'ETH': 'ETHUSDT',
+            'SOL': 'SOLUSDT',
+            'XRP': 'XRPUSDT'
+        }
+
+        symbol = symbol_map.get(crypto)
+        if not symbol:
+            return None
+
+        resp = requests.get(
+            f'https://api.binance.com/api/v3/ticker/price',
+            params={'symbol': symbol},
+            timeout=3
+        )
+
+        if resp.status_code == 200:
+            return float(resp.json()['price'])
+    except:
+        pass
+
+    return None
+
 def get_positions():
     """Get all positions categorized by status."""
     try:
@@ -132,7 +202,8 @@ def get_positions():
                 'win_prob': win_prob,
                 'resolved': resolved,
                 'closed': closed,
-                'redeemable': redeemable
+                'redeemable': redeemable,
+                'market_id': market.get('id') if market else None
             }
 
             if resolved:
@@ -296,6 +367,22 @@ def render_dashboard():
             print(f"\n{status_emoji} [{i}] {pos['outcome']}: {pos['size']:.0f} shares @ {pos['cur_price']*100:.1f}%")
             print(f"    {pos['question']}")
             print(f"    Win Prob: [{bar}] {prob_pct:.1f}%")
+
+            # Try to get price to beat
+            market_id = pos.get('market_id')
+            if market_id:
+                price_to_beat, current_price, direction = get_price_to_beat(market_id, pos['outcome'])
+                if price_to_beat and current_price:
+                    diff = current_price - price_to_beat
+                    diff_pct = (diff / price_to_beat) * 100
+
+                    if direction == 'Up':
+                        status = "✅ WINNING" if diff > 0 else "❌ LOSING"
+                        print(f"    📊 Price to Beat: ${price_to_beat:,.2f} | Current: ${current_price:,.2f} | {status} by ${abs(diff):,.2f} ({abs(diff_pct):.2f}%)")
+                    elif direction == 'Down':
+                        status = "✅ WINNING" if diff < 0 else "❌ LOSING"
+                        print(f"    📊 Price to Beat: ${price_to_beat:,.2f} | Current: ${current_price:,.2f} | {status} by ${abs(diff):,.2f} ({abs(diff_pct):.2f}%)")
+
             print(f"    Current Value: ${pos['current_value']:.2f} | If Win: ${pos['max_payout']:.2f} | Est. Invested: ${est_invested:.2f}")
 
         print(f"\n💰 SUMMARY:")
