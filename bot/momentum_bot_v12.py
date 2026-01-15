@@ -71,11 +71,19 @@ except ImportError:
     pass  # Will log warning after logger initialization
 
 # Trade journal imports (for ML trade logging)
+# Import directly to avoid circular dependencies
 TRADE_JOURNAL_AVAILABLE = False
+TradeJournal = None
 try:
-    from simulation.trade_journal import TradeJournal
+    import sys
+    import importlib.util
+    journal_path = Path(__file__).parent.parent / "simulation" / "trade_journal.py"
+    spec = importlib.util.spec_from_file_location("trade_journal", journal_path)
+    trade_journal_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(trade_journal_module)
+    TradeJournal = trade_journal_module.TradeJournal
     TRADE_JOURNAL_AVAILABLE = True
-except ImportError:
+except Exception:
     pass  # Will log warning after logger initialization
 
 # ML Bot imports (for live ML trading)
