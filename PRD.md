@@ -71,9 +71,14 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 - [x] Verify disabled agents (OnChain, Social) are NOT initialized
 - [x] Verify agent votes only come from enabled agents
 - [x] Typecheck passes
-- [ ] Test on VPS with logs showing enabled agents list
+- [x] Test on VPS with logs showing enabled agents list
 
 **Status:** ✅ COMPLETE (Jan 15, 2026)
+
+**VPS Verification (Jan 15, 2026 22:03 UTC):**
+- ✅ Logs show: "Enabled Agents: Tech, Sentiment, Regime, Candlestick, OrderBook, FundingRate (+ Risk, Gambler veto)"
+- ✅ OnChain and SocialSentiment correctly absent (no API keys)
+- ✅ Agent filtering working as designed
 
 ---
 

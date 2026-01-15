@@ -230,3 +230,36 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 7 - US-004: VPS verification of agent enable/disable
+- What was verified:
+  - Checked VPS logs for enabled agents list
+  - Confirmed 6 voting agents enabled: Tech, Sentiment, Regime, Candlestick, OrderBook, FundingRate
+  - Confirmed 2 veto agents enabled: Risk, Gambler
+  - Confirmed 2 agents disabled: OnChain, SocialSentiment (no API keys)
+  - Marked final US-004 acceptance criterion as complete
+
+- Files changed:
+  - PRD.md (lines 67-76: Marked VPS test complete, added verification results)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - VPS logs contain "Enabled Agents:" message on bot startup
+  - Agent filtering is working correctly on production system
+  - Grep pattern 'Enabled agents:' (case-insensitive) finds startup logs
+  - Multiple log entries per startup (one per strategy initialization)
+  - Disabled agents completely absent from logs (not just marked disabled)
+
+- Key verification details:
+  - Log timestamp: 2026-01-15 21:53:38 UTC (bot restart from Iteration 5)
+  - Voting agents: 6 enabled, 2 disabled (as configured)
+  - Veto agents: 2 enabled (Risk, Gambler - not subject to AGENT_ENABLED flags)
+  - Configuration matches config/agent_config.py AGENT_ENABLED dict
+
+- What worked:
+  - SSH to VPS + grep successfully located verification logs
+  - No code changes needed - verification only
+  - US-004 now fully complete (all acceptance criteria checked)
+
+---
+
