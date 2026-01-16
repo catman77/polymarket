@@ -377,7 +377,7 @@ class TelegramTestHarness:
             self.test_notify_redemption_loss()
             time.sleep(1)
 
-            self.test_notify_critical_alert()
+            self.test_notify_alert()
             time.sleep(1)
 
             self.test_notify_daily_summary()
