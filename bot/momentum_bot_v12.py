@@ -272,18 +272,11 @@ MIN_BET_USD = 1.10                  # Minimum CLOB order value
 MIN_SHARES = 5                      # Minimum shares required by CLOB
 
 # =============================================================================
-# TREND FILTER - FIX #5: Only trade when higher timeframes show clear trend
+# TREND FILTER - REMOVED (US-RI-002)
 # =============================================================================
-# Avoid whipsaw/choppy markets by requiring trend confirmation
-TREND_FILTER_ENABLED = True         # Enable trend-based filtering
-MIN_TREND_SCORE = 0.25              # Minimum |trend_score| to trade (0-1 scale)
-REQUIRE_MAJOR_ALIGNMENT = False     # Require Daily+Weekly alignment (stricter)
-CHOPPY_MARKET_THRESHOLD = 0.15      # Below this = choppy, skip trading
-STRONG_TREND_THRESHOLD = 1.0        # Only apply directional filter if |trend_score| > this (prevents weak trend bias)
-# When enabled, bot will:
-# - Only trade Up when trend_score > MIN_TREND_SCORE
-# - Only trade Down when trend_score < -MIN_TREND_SCORE
-# - Skip trading entirely when |trend_score| < CHOPPY_MARKET_THRESHOLD
+# Trend filter removed due to 96.5% directional bias (Jan 14, 2026)
+# RegimeAgent now handles regime-based adjustments without artificial blocks
+# This allows balanced directional trades (40-60% range) in all market conditions
 
 # =============================================================================
 # CORRELATION PROTECTION - FIX #2: Limit same-direction exposure
@@ -2858,33 +2851,8 @@ def run_bot():
                     if strategy == "contrarian":
                         pass  # Skip other strategy checks
                     else:
-                        # For non-contrarian strategies, apply trend filter
-                        if TREND_FILTER_ENABLED and tf_tracker:
-                            try:
-                                conditions = tf_tracker.get_market_conditions(crypto)
-                                trend_score = conditions.trend_score
-
-                                # Skip choppy markets entirely
-                                if abs(trend_score) < CHOPPY_MARKET_THRESHOLD:
-                                    if int(time.time()) % 60 < 2:
-                                        log.info(f"  [{crypto.upper()}] SKIP: Choppy market (trend={trend_score:.2f})")
-                                    continue
-
-                                # Only apply directional filter for STRONG trends (prevents weak trend bias)
-                                if abs(trend_score) >= STRONG_TREND_THRESHOLD:
-                                    if direction == "Up" and trend_score < MIN_TREND_SCORE:
-                                        log.info(f"  [{crypto.upper()}] SKIP Up: Weak/negative trend ({trend_score:.2f})")
-                                        continue
-                                    if direction == "Down" and trend_score > -MIN_TREND_SCORE:
-                                        log.info(f"  [{crypto.upper()}] SKIP Down: Weak/positive trend ({trend_score:.2f})")
-                                        continue
-                                else:
-                                    # Weak trend (0.15-1.0) - allow both directions to prevent bias
-                                    if int(time.time()) % 60 < 2:
-                                        log.info(f"  [{crypto.upper()}] WEAK TREND ({trend_score:.2f}) - allowing both directions")
-
-                            except Exception as e:
-                                log.warning(f"Trend filter error for {crypto}: {e}")
+                        # For non-contrarian strategies, proceed without trend filter
+                        # RegimeAgent provides regime awareness without directional bias
 
                         # Set entry price for confluence-based direction
                         entry_price = prices[direction]["ask"]
@@ -2976,19 +2944,8 @@ def run_bot():
                     shares = MIN_SHARES
                     size = min_cost
 
-                # Get trend info for logging
-                trend_info = ""
-                if TREND_FILTER_ENABLED and tf_tracker:
-                    try:
-                        conditions = tf_tracker.get_market_conditions(crypto)
-                        trend_info = f" | Trend: {conditions.trend_score:+.2f}"
-                        if conditions.major_timeframes_aligned:
-                            trend_info += " (D+W aligned)"
-                    except:
-                        pass
-
                 log.info(f"\n*** [{crypto.upper()}] {strategy.upper()} SIGNAL: {direction} ***")
-                log.info(f"  Signal: {signal_strength:.2f} | RSI: {rsi_value:.0f}{trend_info}")
+                log.info(f"  Signal: {signal_strength:.2f} | RSI: {rsi_value:.0f}")
                 log.info(f"  Entry: ${entry_price:.2f} | Size: ${size:.2f}")
                 log.info(f"  Mode: {state.mode} | Losses: {state.consecutive_losses}")
 
@@ -3176,32 +3133,7 @@ def run_bot():
                     rsi = rsi_calc.get_rsi(crypto)
                     score = 0.5
 
-                    # FIX #5: Include trend in fallback - SKIP counter-trend bets
-                    trend_score = 0
-                    if TREND_FILTER_ENABLED and tf_tracker:
-                        try:
-                            conditions = tf_tracker.get_market_conditions(crypto)
-                            trend_score = conditions.trend_score
-
-                            # Skip choppy markets even for fallback
-                            if abs(trend_score) < CHOPPY_MARKET_THRESHOLD:
-                                log.info(f"  [{crypto.upper()}] SKIP fallback: Choppy market (trend={trend_score:.2f})")
-                                continue
-
-                            # SKIP counter-trend bets entirely (not just penalize)
-                            if direction == "Up" and trend_score < -MIN_TREND_SCORE:
-                                log.info(f"  [{crypto.upper()}] SKIP fallback Up: Downtrend ({trend_score:.2f})")
-                                continue
-                            if direction == "Down" and trend_score > MIN_TREND_SCORE:
-                                log.info(f"  [{crypto.upper()}] SKIP fallback Down: Uptrend ({trend_score:.2f})")
-                                continue
-
-                            # Bonus for strong trend alignment
-                            if (direction == "Up" and trend_score > 0.3) or \
-                               (direction == "Down" and trend_score < -0.3):
-                                score += 0.25
-                        except Exception as e:
-                            log.warning(f"Trend check error: {e}")
+                    # Fallback logic without trend filter (US-RI-002)
 
                     if agree_count >= 2:
                         score += 0.2

@@ -83,11 +83,11 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Regime detection (RegimeAgent) provides sufficient trend awareness
 
 **Acceptance Criteria:**
-- [ ] 1. Review `bot/momentum_bot_v12.py` → trend filter logic
-- [ ] 2. Remove `TREND_FILTER_ENABLED` and related code
-- [ ] 3. Keep RegimeAgent for regime-based adjustments
-- [ ] 4. Remove `STRONG_TREND_THRESHOLD` (no longer needed)
-- [ ] Typecheck passes
+- [x] 1. Review `bot/momentum_bot_v12.py` → trend filter logic
+- [x] 2. Remove `TREND_FILTER_ENABLED` and related code
+- [x] 3. Keep RegimeAgent for regime-based adjustments
+- [x] 4. Remove `STRONG_TREND_THRESHOLD` (no longer needed)
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - Directional balance: 40-60% (vs 96.5% before)
   - Win rate: ≥58% (should improve without bias)
