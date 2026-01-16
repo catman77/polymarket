@@ -712,13 +712,13 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "When should we shut down the bot? When should we scale up? Clear quantitative triggers prevent emotional decisions."
 
 **Acceptance Criteria:**
-- [ ] Define HALT criteria: Drawdown %, consecutive losses, daily loss $
-- [ ] Define PAUSE criteria: Win rate drops below X%, regime shift detected
-- [ ] Define SCALE UP criteria: Consistent WR >60%, balance >$500, 100+ trades
-- [ ] Generate `reports/EXIT_CRITERIA.md`
-- [ ] Report: Quantitative triggers, decision tree, escalation procedures
-- [ ] Test: Criteria are specific and measurable (not subjective)
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Define HALT criteria: Drawdown %, consecutive losses, daily loss $
+- [x] Define PAUSE criteria: Win rate drops below X%, regime shift detected
+- [x] Define SCALE UP criteria: Consistent WR >60%, balance >$500, 100+ trades
+- [x] Generate `reports/EXIT_CRITERIA.md`
+- [x] Report: Quantitative triggers, decision tree, escalation procedures
+- [x] Test: Criteria are specific and measurable (not subjective)
+- [x] Deliverable is markdown (no typecheck needed)
 
 #### US-RC-036: Generate final presentation deck
 **Persona Context:** "Stakeholders need a visual presentation, not a 100-page report. 20 slides max, focus on insights and recommendations."
