@@ -108,14 +108,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "API retries or redemption bugs could create duplicate entries. These inflate win rates artificially."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/detect_duplicates.py`
-- [ ] Hash each trade: `hash(timestamp + crypto + direction + entry_price)`
-- [ ] Identify exact duplicates (same hash)
-- [ ] Identify near-duplicates (timestamp within 5s, same crypto/direction)
-- [ ] Generate `reports/kenji_nakamoto/duplicate_analysis.csv` with duplicate pairs
-- [ ] Report: Count of duplicates, % of total trades, suspected cause
-- [ ] Test: Script correctly identifies known test duplicates
-- [ ] Typecheck passes
+- [x] Create `scripts/research/detect_duplicates.py`
+- [x] Hash each trade: `hash(timestamp + crypto + direction + entry_price)`
+- [x] Identify exact duplicates (same hash)
+- [x] Identify near-duplicates (timestamp within 5s, same crypto/direction)
+- [x] Generate `reports/kenji_nakamoto/duplicate_analysis.csv` with duplicate pairs
+- [x] Report: Count of duplicates, % of total trades, suspected cause
+- [x] Test: Script correctly identifies known test duplicates
+- [x] Typecheck passes
 
 #### US-RC-003: Reconcile balance from trade history
 **Persona Context:** "If starting_balance + sum(pnl) ≠ current_balance, there's a data integrity issue or hidden transactions."

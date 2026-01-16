@@ -490,3 +490,61 @@
 
 ---
 
+
+## Iteration 8 - US-RC-002: Detect duplicate trades in logs
+**Persona:** Dr. Kenji Nakamoto (Data Forensics Specialist)
+**Completed:** 2026-01-16 10:40
+**Files Changed:**
+- scripts/research/detect_duplicates.py (created)
+- reports/kenji_nakamoto/duplicate_analysis.csv (generated)
+- reports/kenji_nakamoto/duplicate_analysis.md (generated)
+- PRD-research-crew.md (marked US-RC-002 complete)
+
+**Learnings:**
+- Pattern: Duplicate detection requires two approaches:
+  - Hash-based (exact): MD5(timestamp + crypto + direction + entry_price)
+  - Time-window (near): Within 5s + same crypto/direction
+- Pattern: Trade class with is_near_duplicate() method enables clean comparison logic
+  - Abstracts duplicate logic into reusable method
+  - Returns boolean for easy filtering
+- Pattern: CSV and markdown reports serve different audiences
+  - CSV: Machine-readable for downstream analysis
+  - Markdown: Human-readable with assessment and recommendations
+- Gotcha: Must exclude exact duplicates from near-duplicate list
+  - Without filtering, same pair appears in both lists
+  - Check line numbers against exact_duplicates before adding to near_duplicates
+- Gotcha: Sorting trades by timestamp optimizes near-duplicate detection
+  - Can break inner loop when time_diff exceeds window
+  - O(n²) worst case → O(n·k) where k = trades within window
+- Context: Duplicate assessment thresholds:
+  - 0% = EXCELLENT (no action needed)
+  - <1% = ACCEPTABLE (monitor)
+  - 1-5% = WARNING (investigate)
+  - >5% = CRITICAL (data integrity compromised)
+- Context: Suspected causes documented for stakeholder education:
+  - Exact duplicates: API retry, logging bug, idempotency failure
+  - Near-duplicates: Rapid re-entry, bot restart, race condition
+- Context: Report includes actionable recommendations:
+  - Check CLOB API retry logic
+  - Verify idempotency keys used
+  - Add unique trade ID to logs
+  - Remove duplicates before calculating win rate
+
+**Implementation Notes:**
+- Created comprehensive duplicate detection tool
+- Implements two detection methods:
+  1. Exact: Hash-based comparison (MD5 of trade attributes)
+  2. Near: Time-window comparison (5s window, configurable)
+- Trade dataclass with hash_key() and is_near_duplicate() methods
+- DuplicateDetector class orchestrates parsing and detection
+- Handles edge cases: missing log file, zero trades, empty results
+- Generates two outputs:
+  - CSV: All duplicate pairs with metadata (type, timestamps, line numbers, time diff, cause)
+  - Markdown: Executive summary, findings, recommendations, technical details
+- Assessment levels: EXCELLENT/ACCEPTABLE/WARNING/CRITICAL based on duplicate rate
+- Typecheck passed with py_compile
+- Successfully runs in dev environment (generates empty reports when no log file)
+- Script accepts log_file as CLI argument for flexibility
+
+---
+
