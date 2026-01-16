@@ -157,14 +157,24 @@ class AgentDecisionTracker:
     def update_from_log(self):
         """Read new log entries and update decision history"""
         try:
-            # Use tail to get recent lines efficiently
-            result = subprocess.run(
-                ['ssh', '-i', os.path.expanduser('~/.ssh/polymarket_vultr'),
-                 'root@216.238.85.11', f'tail -500 {LOG_FILE}'],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            # Check if we're running on the VPS or locally
+            if os.path.exists(LOG_FILE):
+                # Running on VPS - read local file
+                result = subprocess.run(
+                    ['tail', '-500', LOG_FILE],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+            else:
+                # Running locally - SSH to VPS
+                result = subprocess.run(
+                    ['ssh', '-i', os.path.expanduser('~/.ssh/polymarket_vultr'),
+                     'root@216.238.85.11', f'tail -500 {LOG_FILE}'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
 
             if result.returncode != 0:
                 return
