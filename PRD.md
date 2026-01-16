@@ -211,6 +211,61 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 - [x] Run for 24 hours, collect win rate, directional balance, confidence metrics
 - [x] Typecheck passes
 
+### US-BF-017: Add multi-epoch trend detection to prevent counter-trend trades
+**Description:** As a developer, I need to prevent the bot from taking contrarian trades against clear medium-term trends (1-2 hour downtrends/uptrends) by adding consecutive epoch tracking to TechAgent and lowering detection thresholds.
+
+**Context:**
+- Jan 16 8am trades: Bot bought BTC/ETH Up during clear downtrend (both lost)
+- TechAgent abstained (0.30% threshold too high for -0.15% per epoch moves)
+- RegimeAgent abstained (0.1% mean return threshold classified -0.07% as "sideways")
+- SentimentAgent dominated with 90% confidence contrarian fade
+- Result: Single agent triggered trades against visible 3-5 epoch downtrend
+
+**Root Causes:**
+1. TechAgent only looks at single epoch (misses cumulative 3-5 epoch trends)
+2. Confluence threshold 0.30% filters out -0.15 to -0.20% moves that accumulate
+3. RegimeAgent threshold 0.1% too strict (-0.05 to -0.09% = "sideways" not "weak bear")
+4. No agent tracks consecutive directional epochs (3+ Down in row = downtrend)
+5. Gap between TechAgent (15min) and RegimeAgent (5hr) misses 1-2hr trends
+
+**Acceptance Criteria:**
+- [ ] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 (0.30% → 0.20%) in config/agent_config.py
+- [ ] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 in agents/tech_agent.py (keep in sync)
+- [ ] Lower REGIME_TREND_THRESHOLD from 0.001 to 0.0005 (0.10% → 0.05%) in config/agent_config.py
+- [ ] Lower TREND_THRESHOLD from 0.001 to 0.0005 in agents/regime_agent.py (keep in sync)
+- [ ] Add consecutive_epochs tracking to TechAgent:
+  - Track last 5 epochs of direction (Up/Down/Flat) per crypto
+  - If 3+ consecutive same direction → recognize trend
+  - If current vote conflicts with 3+ epoch trend → reduce confidence by 50%
+  - Add reasoning: "Conflicts with 3-epoch downtrend, reducing confidence"
+- [ ] Add trend_strength field to RegimeAgent vote details:
+  - "strong_bull" (mean > 0.10%), "weak_bull" (0.05-0.10%)
+  - "strong_bear" (mean < -0.10%), "weak_bear" (-0.10 to -0.05%)
+  - "sideways" (-0.05 to +0.05%)
+- [ ] Update vote aggregator to check for trend conflicts:
+  - If TechAgent detects 3+ epoch trend AND agent votes opposite → log warning
+  - Don't auto-veto but flag for consensus threshold adjustment
+- [ ] Add logging: "TechAgent detected 3-epoch downtrend (BTC: Down, Down, Down)"
+- [ ] Add logging: "RegimeAgent classified weak_bear regime (mean: -0.07%)"
+- [ ] Test: TechAgent recognizes 3 consecutive Down epochs as downtrend
+- [ ] Test: RegimeAgent classifies -0.07% mean as weak_bear not sideways
+- [ ] Test: Bot logs warning when SentimentAgent Up vote conflicts with downtrend
+- [ ] Test: Lower thresholds allow detection of -0.15% to -0.20% moves
+- [ ] Typecheck passes
+
+**Success Metrics:**
+- Bot should NOT buy Up during 3+ consecutive Down epochs
+- TechAgent abstain rate should decrease (more signals detected)
+- RegimeAgent should classify weak trends instead of sideways
+- Trades should align with visible 1-2 hour TradingView trends
+
+**Implementation Notes:**
+- Store last 5 epochs per crypto in TechAgent: `self.epoch_history: Dict[str, deque] = {}`
+- Use deque(maxlen=5) for automatic rolling window
+- Check consecutive direction before returning final vote
+- Don't block trades, just adjust confidence when conflict detected
+- Log all trend detections for validation
+
 ## Non-Goals
 
 - No ML model retraining (separate PRD after collecting clean data)
