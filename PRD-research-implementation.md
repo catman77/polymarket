@@ -203,10 +203,10 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Current strategy doesn't prioritize late entries
 
 **Acceptance Criteria:**
-- [ ] 1. Read `reports/jimmy_martinez/timing_window_analysis.md`
-- [ ] 2. Add timing preference to decision logic:
-- [ ] 3. Update `bot/momentum_bot_v12.py`:
-- [ ] Typecheck passes
+- [x] 1. Read `reports/jimmy_martinez/timing_window_analysis.md`
+- [x] 2. Add timing preference to decision logic:
+- [x] 3. Update `bot/momentum_bot_v12.py`:
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - Late trades (600-900s): ≥60% of total trades
   - Late trade WR: Maintain or improve 62%

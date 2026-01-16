@@ -86,6 +86,23 @@ MAX_ENTRY = 0.25                  # Global cap (reduces breakeven WR from 52% to
 EARLY_MAX_ENTRY = 0.30            # Early momentum maximum (overridden by MAX_ENTRY if lower)
 
 # =============================================================================
+# TIMING WINDOW OPTIMIZATION (US-RI-006: Jan 16, 2026)
+# =============================================================================
+
+# Based on research: Late trades (600-900s) have 62% WR, Early trades (0-300s) have 54% WR
+# Apply confidence adjustments based on timing to prioritize late entries
+
+TIMING_OPTIMIZATION_ENABLED = True  # Enable/disable timing bonuses
+
+# Timing windows (seconds into epoch)
+EARLY_WINDOW_END = 300      # 0-300s: Early window (higher risk)
+LATE_WINDOW_START = 600     # 600-900s: Late window (best performance)
+
+# Confidence adjustments (applied to final confidence score)
+LATE_TIMING_BONUS = 0.05    # +5% confidence for late trades (600-900s)
+EARLY_TIMING_PENALTY = 0.03 # -3% confidence for early trades (0-300s)
+
+# =============================================================================
 # TECH AGENT SETTINGS
 # =============================================================================
 

@@ -2012,6 +2012,61 @@ def get_usdc_balance() -> float:
         return 0
 
 
+def calculate_timing_bonus(time_in_epoch: int) -> float:
+    """
+    Calculate confidence adjustment based on time into epoch.
+
+    US-RI-006 (Jan 16, 2026): Optimize Entry Timing Windows
+    Research shows:
+    - Early trades (0-300s): 54% WR (higher risk)
+    - Mid trades (300-600s): Baseline (no adjustment)
+    - Late trades (600-900s): 62% WR (best performance)
+
+    Args:
+        time_in_epoch: Seconds elapsed since epoch start
+
+    Returns:
+        Float adjustment to apply to confidence (-0.03 to +0.05)
+
+    Examples:
+        time_in_epoch=150  -> -0.03 (early penalty)
+        time_in_epoch=450  ->  0.00 (mid, no adjustment)
+        time_in_epoch=750  -> +0.05 (late bonus)
+    """
+    try:
+        from config import agent_config
+
+        # Check if timing optimization is enabled
+        if not getattr(agent_config, 'TIMING_OPTIMIZATION_ENABLED', True):
+            return 0.0
+
+        # Get timing thresholds from config
+        early_end = getattr(agent_config, 'EARLY_WINDOW_END', 300)
+        late_start = getattr(agent_config, 'LATE_WINDOW_START', 600)
+        late_bonus = getattr(agent_config, 'LATE_TIMING_BONUS', 0.05)
+        early_penalty = getattr(agent_config, 'EARLY_TIMING_PENALTY', 0.03)
+
+        # Apply timing adjustment
+        if time_in_epoch >= late_start:
+            # Late window: Apply bonus
+            return late_bonus
+        elif time_in_epoch < early_end:
+            # Early window: Apply penalty
+            return -early_penalty
+        else:
+            # Mid window: No adjustment
+            return 0.0
+
+    except ImportError:
+        # Config not available, use defaults
+        if time_in_epoch >= 600:
+            return 0.05  # Late bonus
+        elif time_in_epoch < 300:
+            return -0.03  # Early penalty
+        else:
+            return 0.0  # Mid, no adjustment
+
+
 # =============================================================================
 # MAIN BOT
 # =============================================================================
@@ -2531,9 +2586,16 @@ def run_bot():
                             reason = ml_decision['reason']
                             weighted_score = confidence  # Use ML confidence as weighted score
 
+                            # US-RI-006: Apply timing bonus/penalty to confidence
+                            timing_adjustment = calculate_timing_bonus(time_in_epoch)
+                            original_confidence = confidence
+                            confidence = max(0.0, min(1.0, confidence + timing_adjustment))  # Clamp to [0, 1]
+                            weighted_score = confidence  # Update weighted score with adjusted confidence
+
                             log.info(f"\n🤖 [ML Bot] {crypto.upper()} decision: {'TRADE' if agent_should_trade else 'SKIP'}")
                             if agent_should_trade:
-                                log.info(f"  Direction: {direction} | Confidence: {confidence:.1%}")
+                                log.info(f"  Direction: {direction} | Confidence: {confidence:.1%} (original: {original_confidence:.1%}, timing: {timing_adjustment:+.1%})")
+                                log.info(f"  Timing: {time_in_epoch}s into epoch ({'LATE' if time_in_epoch >= 600 else 'EARLY' if time_in_epoch < 300 else 'MID'})")
                                 log.info(f"  Reason: {reason}")
                             else:
                                 # ML says skip - continue to next crypto
@@ -2686,8 +2748,16 @@ def run_bot():
                                 log.info(f"  [{crypto.upper()}] 🤖 AGENTS SKIP: {reason}")
                                 continue
 
+                        # US-RI-006: Apply timing bonus/penalty to confidence
+                            timing_adjustment = calculate_timing_bonus(time_in_epoch)
+                            original_confidence = confidence
+                            original_weighted = weighted_score
+                            confidence = max(0.0, min(1.0, confidence + timing_adjustment))  # Clamp to [0, 1]
+                            weighted_score = max(0.0, min(1.0, weighted_score + timing_adjustment))  # Also adjust consensus
+
                         # Agents said TRADE - set up the order
-                            log.info(f"  [{crypto.upper()}] 🤖 AGENTS TRADE {direction.upper()}: {confidence:.0%} confidence, {weighted_score:.1%} consensus")
+                            log.info(f"  [{crypto.upper()}] 🤖 AGENTS TRADE {direction.upper()}: {confidence:.0%} confidence (original: {original_confidence:.1%}, timing: {timing_adjustment:+.1%}), {weighted_score:.1%} consensus")
+                            log.info(f"     Timing: {time_in_epoch}s into epoch ({'LATE' if time_in_epoch >= 600 else 'EARLY' if time_in_epoch < 300 else 'MID'})")
                             log.info(f"     Reason: {reason}")
 
                         # Get entry price and token from agent decision
