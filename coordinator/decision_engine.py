@@ -249,6 +249,9 @@ class DecisionEngine:
         # Initialize agent weights (start equal)
         self.agent_weights = {agent.name: agent.weight for agent in agents}
 
+        # Initialize directional balance tracker (monitors for cascading bias)
+        self.balance_tracker = DirectionalBalanceTracker(window_size=20, bias_threshold=0.70)
+
         self.log.info(f"Initialized with {len(agents)} experts + {len(self.veto_agents)} veto agents")
 
     def decide(self, crypto: str, epoch: int, data: dict) -> TradeDecision:
@@ -313,6 +316,16 @@ class DecisionEngine:
         # Log vote summary
         summary = self.aggregator.get_vote_summary(prediction)
         self.log.info(f"\n{summary}")
+
+        # Record direction for balance tracking (track all decisions with a direction)
+        # Skip votes are automatically filtered by tracker.record() (only tracks Up/Down)
+        if prediction.direction:
+            self.balance_tracker.record(prediction.direction)
+
+            # Check for directional bias after recording
+            if self.balance_tracker.has_bias():
+                balance_summary = self.balance_tracker.get_balance_summary()
+                self.log.warning(f"⚠️ DIRECTIONAL BIAS DETECTED: {balance_summary}")
 
         # Step 5: QUALITY-CONTROLLED TRADING
         # Trade only when both consensus (weighted_score) and confidence meet minimums:

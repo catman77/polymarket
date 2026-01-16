@@ -170,12 +170,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need the balance tracker integrated into decision logic to log warnings when directional cascades are detected.
 
 **Acceptance Criteria:**
-- [ ] Instantiate DirectionalBalanceTracker in decision engine
-- [ ] Add tracker.record() call after each decision
-- [ ] Log warning if tracker.check_balance() detects >70% bias
-- [ ] Test: After 15 Up decisions, warning logged
-- [ ] Test: Balanced decisions (10 Up / 10 Down) → no warning
-- [ ] Typecheck passes
+- [x] Instantiate DirectionalBalanceTracker in decision engine
+- [x] Add tracker.record() call after each decision
+- [x] Log warning if tracker.check_balance() detects >70% bias
+- [x] Test: After 15 Up decisions, warning logged
+- [x] Test: Balanced decisions (10 Up / 10 Down) → no warning
+- [x] Typecheck passes
 
 ### US-BF-010: Verify consensus threshold
 **Description:** As a developer, I need to confirm the consensus threshold is correctly enforced as configured (0.75) with debug logging.
