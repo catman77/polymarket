@@ -93,3 +93,68 @@
 
 ---
 
+## Iteration 3 - Task 7.3: P-Hacking & Overfitting Detection
+**Persona:** Dr. Kenji Nakamoto (Data Forensics Specialist)
+**Completed:** 2026-01-16 09:42
+**Files Changed:**
+- scripts/research/overfitting_detection.py (created)
+- reports/kenji_nakamoto/overfitting_detection_report.md (generated)
+
+**Learnings:**
+- Pattern: SQLite database schema uses `predicted_direction` vs `actual_direction` comparison for win/loss
+  - Not a simple "outcome" column - must compare two direction fields
+  - WIN = when predicted_direction == actual_direction
+  - LOSS = when predicted_direction != actual_direction
+- Pattern: Database joins require careful foreign key relationships
+  - strategies.name → outcomes.strategy (not strategy_id)
+  - LEFT JOIN preserves strategies with no trades yet
+- Pattern: Report generation must handle missing data gracefully
+  - Use .get() with defaults instead of direct dictionary access
+  - Check for None/empty lists before calculations
+  - Provide meaningful output even with zero data
+- Gotcha: KeyError when accessing dictionary keys without checking existence
+  - Always use dict.get(key, default) for optional values
+  - Define variables before using in f-strings
+- Gotcha: Division by zero when len(strategies) might be 0
+  - Use max(len(strategies), 1) in calculations as safety net
+- Context: Bonferroni correction formula: α_corrected = α_original / number_of_tests
+  - With 27 strategies, corrected α = 0.05 / 27 = 0.00185
+  - Prevents false positives from multiple hypothesis testing
+- Context: Overfitting risk levels:
+  - 🟢 LOW: 0 concerns detected
+  - 🟡 MODERATE: 1-2 concerns
+  - 🔴 HIGH: 3+ concerns
+- Context: Walk-forward validation is gold standard for time-series data
+  - Train on Period 1, test on Period 2
+  - Retrain on Period 1-2, test on Period 3
+  - Prevents future data leakage
+
+**Implementation Notes:**
+- Created comprehensive overfitting detection tool
+- Loads configuration parameters from config/agent_config.py
+- Analyzes shadow strategy performance from SQLite database
+- Calculates Bonferroni-corrected significance threshold
+- Groups strategies by type (conservative, aggressive, ML, etc.)
+- Detects overfitting signs:
+  - Top performers vs baseline comparison
+  - Inverse strategy performance (anti-predictive agents)
+  - Win rate distribution variance
+  - High vs low confidence filter comparison
+- Generates detailed markdown report with:
+  - Executive summary with risk level
+  - Current parameter configuration
+  - Multiple testing correction calculations
+  - Parameter sensitivity analysis
+  - Overfitting detection results
+  - Top 10 strategies leaderboard
+  - Actionable recommendations
+  - Walk-forward validation proposal
+  - Feature leakage audit checklist
+  - Full strategy performance appendix
+  - Statistical formulas reference
+- Handles edge cases: no database, empty tables, missing config
+- Typecheck passed with py_compile
+- Successfully generates report even with no shadow trading data
+
+---
+
