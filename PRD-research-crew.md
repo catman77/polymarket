@@ -485,16 +485,16 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "When an agent says 80% confidence, does it win 80% of the time? Or is it overconfident?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/agent_calibration.py`
-- [ ] For each agent: Group votes by confidence bucket (0.5-0.6, 0.6-0.7, 0.7-0.8, etc.)
-- [ ] Calculate actual win rate in each bucket
-- [ ] Plot: Calibration curve (predicted vs actual)
-- [ ] Perfect calibration: y=x line
-- [ ] Generate `reports/amara_johnson/calibration_analysis.md`
-- [ ] Create plot: `reports/amara_johnson/calibration_plot.png`
-- [ ] Report: Which agents are overconfident (predicted > actual), calibration error
-- [ ] Test: Calibration curve generated for ≥3 agents
-- [ ] Typecheck passes
+- [x] Create `scripts/research/agent_calibration.py`
+- [x] For each agent: Group votes by confidence bucket (0.5-0.6, 0.6-0.7, 0.7-0.8, etc.)
+- [x] Calculate actual win rate in each bucket
+- [x] Plot: Calibration curve (predicted vs actual)
+- [x] Perfect calibration: y=x line
+- [x] Generate `reports/amara_johnson/calibration_analysis.md`
+- [x] Create plot: `reports/amara_johnson/calibration_plot.png`
+- [x] Report: Which agents are overconfident (predicted > actual), calibration error
+- [x] Test: Calibration curve generated for ≥3 agents
+- [x] Typecheck passes
 
 ---
 
