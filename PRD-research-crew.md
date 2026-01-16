@@ -636,21 +636,21 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If we started from scratch knowing what we know now, what would we build? Sketch it."
 
 **Acceptance Criteria:**
-- [ ] Create `reports/alex_rousseau/first_principles_design.md`
-- [ ] Design from scratch:
+- [x] Create `reports/alex_rousseau/first_principles_design.md`
+- [x] Design from scratch:
   - **Goal:** 60% WR at <$0.25 entry with minimal complexity
   - **Core components:** What's truly essential? (likely 1-3 things)
   - **Architecture:** How do they interact? (simpler than current)
   - **Config:** How many parameters? (target: <10)
   - **Code size:** Lines of code estimate (target: <500 lines)
-- [ ] Compare to current system:
+- [x] Compare to current system:
   - Current: 1600+ lines, 50+ config params, 11 agents
   - Proposed: ??? lines, ??? params, ??? agents
-- [ ] Migration path: How to get from current to proposed
-- [ ] Risk assessment: What could go wrong?
-- [ ] Generate visual diagram: Current system vs proposed system
-- [ ] Test: Proposal has concrete architecture (not vague ideas)
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Migration path: How to get from current to proposed
+- [x] Risk assessment: What could go wrong?
+- [x] Generate visual diagram: Current system vs proposed system
+- [x] Test: Proposal has concrete architecture (not vague ideas)
+- [x] Deliverable is markdown (no typecheck needed)
 
 ---
 
