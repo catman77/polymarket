@@ -125,12 +125,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need RSI 40-60 (neutral zone) to return 0.5 confidence instead of 1.0, preventing false high confidence in sideways markets.
 
 **Acceptance Criteria:**
-- [ ] Change agents/tech_agent.py lines 95, 105: Return 0.5 instead of 1.0 for RSI 40-60
-- [ ] Update reasoning to indicate "RSI neutral → low confidence"
-- [ ] Test: RSI=50 → confidence=0.5
-- [ ] Test: RSI=65 → confidence=0.8 (bearish, unchanged)
-- [ ] Test: RSI=35 → confidence=0.8 (bullish, unchanged)
-- [ ] Typecheck passes
+- [x] Change agents/tech_agent.py lines 95, 105: Return 0.5 instead of 1.0 for RSI 40-60
+- [x] Update reasoning to indicate "RSI neutral → low confidence"
+- [x] Test: RSI=50 → confidence=0.5
+- [x] Test: RSI=65 → confidence=0.8 (bearish, unchanged)
+- [x] Test: RSI=35 → confidence=0.8 (bullish, unchanged)
+- [x] Typecheck passes
 
 ### US-BF-006: Update vote aggregator for Skip votes
 **Description:** As a developer, I need the vote aggregator to filter out Skip votes before calculating consensus, treating abstentions correctly.

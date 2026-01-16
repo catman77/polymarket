@@ -93,8 +93,8 @@ class RSICalculator:
                 return 0.0, f"RSI {rsi:.0f} OVERBOUGHT"
             elif rsi > 60:
                 return 0.5, f"RSI {rsi:.0f} elevated"
-            elif rsi > 40:
-                return 1.0, f"RSI {rsi:.0f} neutral"
+            elif rsi >= 40:
+                return 0.5, f"RSI {rsi:.0f} neutral → low confidence"
             else:
                 return 0.8, f"RSI {rsi:.0f} oversold (good for Up)"
         else:  # Down
@@ -102,8 +102,8 @@ class RSICalculator:
                 return 0.0, f"RSI {rsi:.0f} OVERSOLD"
             elif rsi < 40:
                 return 0.5, f"RSI {rsi:.0f} low"
-            elif rsi < 60:
-                return 1.0, f"RSI {rsi:.0f} neutral"
+            elif rsi <= 60:
+                return 0.5, f"RSI {rsi:.0f} neutral → low confidence"
             else:
                 return 0.8, f"RSI {rsi:.0f} overbought (good for Down)"
 
