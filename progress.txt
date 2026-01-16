@@ -189,3 +189,42 @@
   - Syntax check passed for vote_aggregator.py
   - Logic verified with minimal test (no import errors)
 ---
+## Iteration 11 - US-BF-007: Change weighted score to average
+- Changed coordinator/vote_aggregator.py lines 154-165 to calculate average instead of sum
+- Created calc_avg_weighted_score() helper function with proper formula
+- Formula: weighted_score = sum(confidence * weight) / sum(weight)
+- Added debug logging for weighted scores (lines 200-203)
+- Files changed:
+  - coordinator/vote_aggregator.py (changed sum to average, added helper function and debug logging)
+  - test_weighted_average_simple.py (created comprehensive test suite with 5 test cases)
+  - PRD.md (marked US-BF-007 complete)
+- Learnings for future iterations:
+  - Previous behavior: sum(confidence × quality × weight) → three 0.35 votes summed to 1.05
+  - New behavior: average(confidence × quality × weight) → three 0.35 votes average to 0.12
+  - Prevents weak signal stacking: multiple weak votes no longer combine into false strong signals
+  - Helper function handles edge cases: empty list returns 0.0, single vote returns its own score
+  - Different agent weights handled correctly: weighted average formula divides by sum of weights
+  - Debug logging shows all three directional scores (Up/Down/Neutral) at DEBUG level
+  - All 5 test cases passed: three weak votes, mixed confidence, different weights, single vote, empty list
+  - Typecheck passed for vote_aggregator.py
+  - This is a critical fix: prevents systematic bias from multiple uncertain agents voting same direction
+---
+## Iteration 12 - US-BF-008: Add directional balance tracker class
+- Created DirectionalBalanceTracker class in coordinator/decision_engine.py
+- Added DirectionalDecision dataclass to store direction + timestamp
+- Uses collections.deque with maxlen for efficient rolling window (O(1) append)
+- Tracks last 20 decisions (configurable window_size parameter)
+- Files changed:
+  - coordinator/decision_engine.py (lines 11, 26-156: added tracker class and dataclass)
+  - test_balance_tracker_standalone.py (created comprehensive test suite with 6 test cases)
+  - PRD.md (marked US-BF-008 complete)
+- Learnings for future iterations:
+  - DirectionalBalanceTracker uses deque(maxlen=N) for automatic rolling window management
+  - Only Up/Down decisions tracked (Skip/Neutral ignored) - prevents false bias from abstentions
+  - Bias detection requires BOTH conditions: total >= window_size AND percentage >= threshold
+  - has_bias() returns False if insufficient decisions (<20) to avoid false alarms
+  - get_balance_summary() provides human-readable output with emoji alert when bias detected
+  - Test coverage: bias detected (15/5), balanced (10/10), empty, insufficient (<20), extreme (100%), rolling window
+  - All 6 tests passed, syntax check passed
+  - Class is ready for integration in next task (US-BF-009)
+---
