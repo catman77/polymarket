@@ -54,7 +54,8 @@ def get_current_epoch_time():
 def get_bot_state():
     """Read bot trading state."""
     try:
-        with open('/opt/polymarket-autotrader/v12_state/trading_state.json', 'r') as f:
+        # Bot now uses state/ directory (not v12_state/)
+        with open('/opt/polymarket-autotrader/state/trading_state.json', 'r') as f:
             return json.load(f)
     except:
         return None
