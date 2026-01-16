@@ -5,6 +5,46 @@
 
 ---
 
+## EMERGENCY FIX - Jan 16, 2026 13:22 UTC: Disable Contrarian Trades
+**Status:** ✅ DEPLOYED AND VERIFIED
+
+**Issue:** SentimentAgent triggering 4 trades in 20 minutes during trending market
+- All trades: Up direction @ $0.04-$0.05 entries (4-5% probability)
+- Pattern: SentimentAgent 90% confidence alone (33% agreement rate)
+- Market reality: Clear downtrends visible on TradingView charts
+- Root cause: Contrarian strategy only works in choppy/volatile regimes, NOT trending markets
+
+**Fix Applied:**
+- Added ENABLE_CONTRARIAN_TRADES = False flag to config/agent_config.py
+- Updated agents/sentiment_agent.py to check flag at start of analyze()
+- If disabled, SentimentAgent returns Skip vote immediately
+- Reasoning: "Contrarian trades disabled (trending market regime detected)"
+
+**Deployment:**
+- Files deployed via scp to VPS at 13:22 UTC
+- Bot restarted successfully
+- Verified in logs: SentimentAgent now abstaining consistently
+
+**Verification (60 seconds of monitoring):**
+- SentimentAgent abstaining on ALL scans
+- Log message: "[SentimentAgent] {crypto}: Contrarian trades DISABLED - abstaining"
+- No trades placed (was 4 trades in 20 min before fix)
+- Weighted scores now 0.505 (below 0.75 threshold) instead of 0.765
+- Only OrderBookAgent and FundingRateAgent voting (both low confidence)
+
+**Impact:**
+- Trade frequency: 100% reduction in last 60 seconds (expected)
+- No more counter-trend contrarian trades during downtrends
+- Bot now requires TechAgent/RegimeAgent signals to trade (trend-aware)
+- Long-term fix needed: Regime-aware contrarian (only trade in choppy markets)
+
+**Next Steps:**
+- Monitor for 2-4 hours to confirm sustained trade reduction
+- If successful, create proper regime-aware contrarian strategy
+- Document as US-BF-018: "Implement regime-aware SentimentAgent"
+
+---
+
 ## Iteration 1 - US-BF-013: Disable ML mode temporarily
 - Added USE_ML_MODEL=False flag to config/agent_config.py
 - Updated bot/momentum_bot_v12.py to check config flag before environment variable
@@ -336,5 +376,33 @@
   - Strategy position in list: 27/27 (last strategy, easy to find in dashboard)
   - Test coverage: Both functional tests and integration tests passed
   - Typecheck passed for all files
+---
+
+## Iteration 17 - US-BF-017: Add multi-epoch trend detection
+- Lowered TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 (0.30% → 0.20%)
+- Lowered REGIME_TREND_THRESHOLD from 0.001 to 0.0005 (0.10% → 0.05%)
+- Added epoch_history tracking to TechAgent using deque(maxlen=5)
+- Implemented 3+ consecutive epoch trend detection in TechAgent
+- TechAgent reduces confidence by 50% when vote conflicts with detected trend
+- Added trend_strength field to RegimeAgent (strong_bull, weak_bull, weak_bear, strong_bear, sideways)
+- Updated VoteAggregator to log warnings when trend conflicts detected
+- Files changed:
+  - config/agent_config.py (lowered both thresholds with updated comments)
+  - agents/tech_agent.py (added epoch tracking, trend detection, conflict handling)
+  - agents/regime_agent.py (added trend_strength classification)
+  - coordinator/vote_aggregator.py (added trend conflict logging)
+  - test_multi_epoch_trend.py (comprehensive test suite with 5 tests)
+  - PRD.md (marked US-BF-017 complete)
+- Learnings for future iterations:
+  - Trend detection must check history BEFORE adding current direction (else always None)
+  - Must add current direction to history AFTER conflict detection (proper order matters)
+  - RegimeAgent Skip votes also need trend_strength field (all vote paths must be consistent)
+  - Lower thresholds detect cumulative trends: 3 epochs @ -0.18% = -0.54% total
+  - TechAgent abstain rate should decrease with lower threshold (more signals detected)
+  - RegimeAgent now classifies weak trends instead of lumping into sideways
+  - Conflict detection prevents bot from buying Up during 3+ consecutive Down epochs
+  - VoteAggregator logs both: TechAgent self-conflicts AND inter-agent conflicts
+  - Test coverage: threshold values, epoch tracking, trend detection, conflict flagging, trend strength
+  - All 5 tests passed, typecheck passed for all 4 modified files
 ---
 

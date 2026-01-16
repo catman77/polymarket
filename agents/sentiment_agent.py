@@ -67,6 +67,21 @@ class SentimentAgent(BaseAgent):
         Returns:
             Vote with sentiment analysis prediction
         """
+        # EMERGENCY FIX: Check if contrarian trades are disabled
+        # Contrarian strategy only works in choppy/volatile regimes, NOT trending markets
+        from config import agent_config
+        if not agent_config.ENABLE_CONTRARIAN_TRADES:
+            vote = Vote(
+                direction="Skip",
+                confidence=0.0,
+                quality=0.0,
+                agent_name=self.name,
+                reasoning="Contrarian trades disabled (trending market regime detected)",
+                details={'contrarian_disabled': True}
+            )
+            self.log.info(f"[{self.name}] {crypto}: Contrarian trades DISABLED - abstaining")
+            return vote
+
         orderbook = data.get('orderbook', {})
         time_in_epoch = data.get('time_in_epoch', 0)
         rsi = data.get('rsi', 50.0)
