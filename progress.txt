@@ -168,3 +168,24 @@
   - All 5 tests passed, syntax check passed
   - RSI scoring now consistent: neutral=0.5, mild signals=0.5, strong signals=0.8, opposing extremes=0.0
 ---
+## Iteration 10 - US-BF-006: Update vote aggregator for Skip votes
+- Added Skip vote filtering in coordinator/vote_aggregator.py line 119-132
+- Skip votes filtered BEFORE confidence threshold filtering (proper order)
+- Logs number of Skip votes and which agents abstained
+- Returns empty prediction if all votes are Skip (no consensus possible)
+- Updated validate_votes() to accept "Skip" as valid direction (line 301)
+- Files changed:
+  - coordinator/vote_aggregator.py (lines 119-132: Skip filtering, line 301: validation update)
+  - test_skip_simple.py (created minimal test suite to verify filtering logic)
+  - test_vote_aggregator_skip.py (created comprehensive test suite with 5 scenarios)
+  - PRD.md (marked US-BF-006 complete)
+- Learnings for future iterations:
+  - Skip votes must be filtered FIRST, then confidence filtering on remaining votes
+  - Filter order matters: Skip → confidence → aggregation
+  - If all votes are Skip → return empty prediction (no consensus)
+  - Log info level (not warning) when Skip votes present - it's expected behavior
+  - Skip vote filtering reduces vote count for consensus calculation (3 Up + 2 Down + 1 Skip = 5 votes counted)
+  - Test coverage: 5 scenarios (mixed votes, all Skip, validation, mixed with low agents)
+  - Syntax check passed for vote_aggregator.py
+  - Logic verified with minimal test (no import errors)
+---

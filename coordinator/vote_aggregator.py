@@ -116,22 +116,37 @@ class VoteAggregator:
         if len(votes) < self.min_agents:
             self.log.warning(f"Only {len(votes)} agents voted (min: {self.min_agents})")
 
+        # Filter out Skip votes (agents abstaining when uncertain)
+        skip_votes = [v for v in votes if v.direction == "Skip"]
+        non_skip_votes = [v for v in votes if v.direction != "Skip"]
+
+        if skip_votes:
+            self.log.info(
+                f"Filtered {len(skip_votes)} Skip vote(s) - agents abstaining: "
+                f"{[v.agent_name for v in skip_votes]}"
+            )
+
+        # Check if all votes are Skip (no consensus possible)
+        if not non_skip_votes:
+            self.log.warning("All agents abstained (Skip votes only) - no consensus possible")
+            return self._empty_prediction()
+
         # Filter votes below minimum individual confidence (quality control)
         MIN_INDIVIDUAL_CONFIDENCE = 0.30
-        valid_votes = [v for v in votes if v.confidence >= MIN_INDIVIDUAL_CONFIDENCE]
+        valid_votes = [v for v in non_skip_votes if v.confidence >= MIN_INDIVIDUAL_CONFIDENCE]
 
         # Check if we have enough high-quality votes
         if len(valid_votes) < 2:
             self.log.warning(
                 f"Only {len(valid_votes)} agents meet {MIN_INDIVIDUAL_CONFIDENCE:.0%} confidence threshold "
-                f"(filtered {len(votes) - len(valid_votes)} low-confidence votes)"
+                f"(filtered {len(non_skip_votes) - len(valid_votes)} low-confidence votes)"
             )
             return self._empty_prediction()
 
         # Use filtered votes for aggregation
         votes = valid_votes
 
-        # Count votes by direction
+        # Count votes by direction (Skip votes already filtered out)
         up_votes = [v for v in votes if v.direction == "Up"]
         down_votes = [v for v in votes if v.direction == "Down"]
         neutral_votes = [v for v in votes if v.direction == "Neutral"]
@@ -283,7 +298,7 @@ class VoteAggregator:
 
         # Validate vote structure (already validated in __post_init__, but double-check)
         for vote in votes:
-            if vote.direction not in ["Up", "Down", "Neutral"]:
+            if vote.direction not in ["Up", "Down", "Neutral", "Skip"]:
                 return False, f"Invalid direction: {vote.direction}"
 
             if not (0.0 <= vote.confidence <= 1.0):

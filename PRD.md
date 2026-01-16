@@ -136,12 +136,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need the vote aggregator to filter out Skip votes before calculating consensus, treating abstentions correctly.
 
 **Acceptance Criteria:**
-- [ ] Update coordinator/vote_aggregator.py line 119: Filter Skip votes before aggregation
-- [ ] Only count Up/Down votes in consensus calculation
-- [ ] Log number of Skip votes for debugging
-- [ ] Test: 3 Up, 2 Down, 1 Skip → consensus calculated from 5 votes (not 6)
-- [ ] Test: All Skip votes → return no consensus (skip trade)
-- [ ] Typecheck passes
+- [x] Update coordinator/vote_aggregator.py line 119: Filter Skip votes before aggregation
+- [x] Only count Up/Down votes in consensus calculation
+- [x] Log number of Skip votes for debugging
+- [x] Test: 3 Up, 2 Down, 1 Skip → consensus calculated from 5 votes (not 6)
+- [x] Test: All Skip votes → return no consensus (skip trade)
+- [x] Typecheck passes
 
 ### US-BF-007: Change weighted score to average
 **Description:** As a developer, I need weighted scores to average instead of sum to prevent weak signals from stacking into false consensus.
