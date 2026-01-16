@@ -2023,8 +2023,12 @@ def run_bot():
         state.daily_loss_count = 0
         log.info(f"New day detected - reset daily tracking")
 
-    # ALWAYS track peak across all days (never reset)
-    state.peak_balance = max(state.peak_balance, balance)
+    # TEMPORARY: Allow manual peak reset after $154 loss incident (Jan 16, 2026)
+    # Commented to allow manual reset via state file
+    # state.peak_balance = max(state.peak_balance, balance)
+    # TODO: Re-enable automatic peak tracking after reset verified and bot trading again
+    if state.peak_balance == 0:  # Only set peak if uninitialized
+        state.peak_balance = balance
 
     log.info(f"Balance: ${balance:.2f}")
     log.info(f"Mode: {state.mode}")
