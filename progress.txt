@@ -191,3 +191,27 @@ Learnings for future iterations:
 - Summary uses plain text formatting (no Markdown) to avoid parsing errors
 
 ---
+## Iteration 6 - US-TG-010: Bot control commands
+- Implemented /halt command with confirmation (/confirm_halt)
+- Implemented /resume command with confirmation (/confirm_resume)
+- Implemented /mode <mode> command with confirmation (/confirm_mode)
+- All commands require confirmation to prevent accidental changes
+- Commands directly modify state/trading_state.json
+- Supported modes: normal, conservative, defensive, recovery, halted
+- Uses context.user_data to track pending mode changes between messages
+- All commands logged with user, timestamp, and action taken
+- Mode-specific emojis and clear feedback messages
+
+Files changed:
+- telegram_bot/telegram_notifier.py: Added 6 new command handlers (halt, confirm_halt, resume, confirm_resume, mode, confirm_mode)
+- PRD.md: Marked US-TG-010 as complete
+
+Learnings for future iterations:
+- Telegram bot context.user_data allows storing state between command calls
+- Confirmation pattern: request command → store pending action → confirm command → execute action
+- State file location has fallback: /opt/polymarket-autotrader/state/trading_state.json (VPS) or state/trading_state.json (local)
+- Control commands are high-risk - always require confirmation and log actions
+- Mode changes are immediate - bot reads state file on each scan cycle
+- Updated welcome message to include control commands and daily summaries
+
+---

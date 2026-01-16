@@ -10,6 +10,7 @@ Provides:
 
 import os
 import sys
+import json
 import logging
 import asyncio
 from datetime import datetime
@@ -68,12 +69,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/positions - Active positions\n"
         "/status - Bot status and mode\n"
         "/stats - Trading statistics\n\n"
+        "*Control Commands:*\n"
+        "/halt - Stop all trading\n"
+        "/resume - Resume trading\n"
+        "/mode <mode> - Change trading mode\n\n"
         "*Help:*\n"
         "/help - Show this message\n\n"
         "🔔 Real-time notifications enabled for:\n"
         "• New trades\n"
         "• Redemptions\n"
-        "• Critical alerts"
+        "• Critical alerts\n"
+        "• Daily summaries"
     )
 
     await update.message.reply_text(welcome_message, parse_mode='Markdown')
@@ -151,6 +157,204 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error in stats_command: {e}", exc_info=True)
         await update.message.reply_text(f"❌ Error fetching statistics: {str(e)}")
+
+
+async def halt_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /halt command - request confirmation to halt bot."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    confirmation_message = (
+        "⚠️ *CONFIRM HALT?*\n\n"
+        "This will stop all trading.\n"
+        "Reply /confirm\\_halt to proceed."
+    )
+
+    await update.message.reply_text(confirmation_message, parse_mode='Markdown')
+    logger.info(f"Halt request by {update.effective_user.username}")
+
+
+async def confirm_halt_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /confirm_halt command - actually halt the bot."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    try:
+        # Update trading state to HALTED mode
+        state_file = '/opt/polymarket-autotrader/state/trading_state.json'
+        if not os.path.exists(state_file):
+            state_file = 'state/trading_state.json'
+
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        state['mode'] = 'halted'
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        message = (
+            "🛑 *BOT HALTED*\n\n"
+            "Trading stopped.\n"
+            "Use /resume to restart."
+        )
+
+        await update.message.reply_text(message, parse_mode='Markdown')
+        logger.warning(f"Bot halted by {update.effective_user.username}")
+
+    except Exception as e:
+        logger.error(f"Error in confirm_halt_command: {e}", exc_info=True)
+        await update.message.reply_text(f"❌ Error halting bot: {str(e)}")
+
+
+async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /resume command - request confirmation to resume trading."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    confirmation_message = (
+        "✅ *CONFIRM RESUME?*\n\n"
+        "This will resume normal trading.\n"
+        "Reply /confirm\\_resume to proceed."
+    )
+
+    await update.message.reply_text(confirmation_message, parse_mode='Markdown')
+    logger.info(f"Resume request by {update.effective_user.username}")
+
+
+async def confirm_resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /confirm_resume command - actually resume the bot."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    try:
+        # Update trading state to NORMAL mode
+        state_file = '/opt/polymarket-autotrader/state/trading_state.json'
+        if not os.path.exists(state_file):
+            state_file = 'state/trading_state.json'
+
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        state['mode'] = 'normal'
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        message = (
+            "✅ *BOT RESUMED*\n\n"
+            "Trading resumed in NORMAL mode.\n"
+            "Use /status to check bot status."
+        )
+
+        await update.message.reply_text(message, parse_mode='Markdown')
+        logger.info(f"Bot resumed by {update.effective_user.username}")
+
+    except Exception as e:
+        logger.error(f"Error in confirm_resume_command: {e}", exc_info=True)
+        await update.message.reply_text(f"❌ Error resuming bot: {str(e)}")
+
+
+async def mode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /mode <mode> command - change trading mode with confirmation."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    # Check if mode argument provided
+    if not context.args or len(context.args) != 1:
+        message = (
+            "📋 *MODE COMMAND*\n\n"
+            "Usage: /mode <mode>\n\n"
+            "Valid modes:\n"
+            "• normal - Standard trading\n"
+            "• conservative - Reduced position sizes\n"
+            "• defensive - Further reduced sizes\n"
+            "• recovery - Minimal position sizes\n"
+            "• halted - Stop trading (use /halt instead)\n\n"
+            "Example: /mode conservative"
+        )
+        await update.message.reply_text(message, parse_mode='Markdown')
+        return
+
+    new_mode = context.args[0].lower()
+    valid_modes = ['normal', 'conservative', 'defensive', 'recovery', 'halted']
+
+    if new_mode not in valid_modes:
+        await update.message.reply_text(
+            f"❌ Invalid mode: {new_mode}\n"
+            f"Valid modes: {', '.join(valid_modes)}"
+        )
+        return
+
+    # Store pending mode change in context
+    context.user_data['pending_mode'] = new_mode
+
+    confirmation_message = (
+        f"⚠️ *CONFIRM MODE CHANGE?*\n\n"
+        f"Change mode to: *{new_mode.upper()}*\n\n"
+        f"Reply /confirm\\_mode to proceed."
+    )
+
+    await update.message.reply_text(confirmation_message, parse_mode='Markdown')
+    logger.info(f"Mode change request by {update.effective_user.username}: {new_mode}")
+
+
+async def confirm_mode_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /confirm_mode command - actually change the mode."""
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Unauthorized access")
+        return
+
+    # Check if there's a pending mode change
+    new_mode = context.user_data.get('pending_mode')
+    if not new_mode:
+        await update.message.reply_text("❌ No pending mode change. Use /mode <mode> first.")
+        return
+
+    try:
+        # Update trading state
+        state_file = '/opt/polymarket-autotrader/state/trading_state.json'
+        if not os.path.exists(state_file):
+            state_file = 'state/trading_state.json'
+
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        old_mode = state.get('mode', 'unknown')
+        state['mode'] = new_mode
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        # Clear pending mode change
+        context.user_data.pop('pending_mode', None)
+
+        # Mode-specific emojis
+        mode_emoji = {
+            'normal': '🟢',
+            'conservative': '🟡',
+            'defensive': '🟠',
+            'recovery': '🔴',
+            'halted': '🛑'
+        }
+
+        message = (
+            f"{mode_emoji.get(new_mode, '📋')} *MODE CHANGED*\n\n"
+            f"{old_mode.upper()} → {new_mode.upper()}\n\n"
+            f"Use /status to verify."
+        )
+
+        await update.message.reply_text(message, parse_mode='Markdown')
+        logger.warning(f"Mode changed by {update.effective_user.username}: {old_mode} → {new_mode}")
+
+    except Exception as e:
+        logger.error(f"Error in confirm_mode_command: {e}", exc_info=True)
+        await update.message.reply_text(f"❌ Error changing mode: {str(e)}")
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
@@ -492,6 +696,14 @@ def main():
     application.add_handler(CommandHandler("positions", positions_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("stats", stats_command))
+
+    # Control commands
+    application.add_handler(CommandHandler("halt", halt_command))
+    application.add_handler(CommandHandler("confirm_halt", confirm_halt_command))
+    application.add_handler(CommandHandler("resume", resume_command))
+    application.add_handler(CommandHandler("confirm_resume", confirm_resume_command))
+    application.add_handler(CommandHandler("mode", mode_command))
+    application.add_handler(CommandHandler("confirm_mode", confirm_mode_command))
 
     # Add error handler
     application.add_error_handler(error_handler)

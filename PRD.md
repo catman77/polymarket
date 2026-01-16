@@ -374,15 +374,15 @@ Tomorrow: Mode NORMAL, 7 agents active
 **Description:** As a bot operator, I need commands to control the bot remotely so I can halt/resume trading via Telegram in emergencies.
 
 **Acceptance Criteria:**
-- [ ] Implement `/halt` command - sets bot to HALTED mode
-- [ ] Implement `/resume` command - resumes normal trading
-- [ ] Implement `/mode <mode>` command - changes mode (normal/conservative/defensive)
-- [ ] Require confirmation for destructive actions (halt, mode change)
-- [ ] Update `state/trading_state.json` with new mode
-- [ ] Send confirmation notification after mode change
-- [ ] Log all control commands with timestamp and user
-- [ ] Typecheck passes
-- [ ] Test: `/halt` → Bot enters HALTED mode, stops trading
+- [x] Implement `/halt` command - sets bot to HALTED mode
+- [x] Implement `/resume` command - resumes normal trading
+- [x] Implement `/mode <mode>` command - changes mode (normal/conservative/defensive)
+- [x] Require confirmation for destructive actions (halt, mode change)
+- [x] Update `state/trading_state.json` with new mode
+- [x] Send confirmation notification after mode change
+- [x] Log all control commands with timestamp and user
+- [x] Typecheck passes
+- [x] Test: `/halt` → Bot enters HALTED mode, stops trading
 
 **Example Interaction:**
 ```
@@ -397,9 +397,20 @@ Bot: 🛑 BOT HALTED
       Use /resume to restart.
 ```
 
-**Status:** ⏳ PENDING (Optional - implement if needed)
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
+
+**Implementation Notes:**
+- Implemented `/halt` and `/confirm_halt` commands (halt requires confirmation)
+- Implemented `/resume` and `/confirm_resume` commands (resume requires confirmation)
+- Implemented `/mode <mode>` and `/confirm_mode` commands (mode change requires confirmation)
+- All control commands modify `state/trading_state.json` directly
+- Commands support: normal, conservative, defensive, recovery, halted modes
+- Confirmation prevents accidental mode changes
+- Uses context.user_data to track pending mode changes between messages
+- All commands logged with user and timestamp for audit trail
+- Mode-specific emojis in responses (🟢 normal, 🟡 conservative, 🟠 defensive, 🔴 recovery, 🛑 halted)
 
 ---
 
