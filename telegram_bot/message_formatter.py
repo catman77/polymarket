@@ -325,7 +325,7 @@ class MessageFormatter:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # Overall stats
+            # Overall stats - filter by live strategy (ml_live_*)
             cursor.execute('''
                 SELECT
                     COUNT(*) as total,
@@ -337,28 +337,29 @@ class MessageFormatter:
                     MIN(pnl) as worst_trade
                 FROM outcomes o
                 JOIN trades t ON o.trade_id = t.id
-                WHERE t.is_shadow = 0
+                WHERE t.strategy LIKE 'ml_live%'
             ''')
 
             row = cursor.fetchone()
             total, wins, losses, total_pnl, avg_pnl, best_trade, worst_trade = row
 
-            if total == 0:
+            if total == 0 or total is None:
                 conn.close()
-                return "📊 *TRADING STATISTICS*\n\nNo trades recorded yet."
+                return "📊 *TRADING STATISTICS*\\n\\nNo trades recorded yet\\."
 
             win_rate = (wins / total * 100) if total > 0 else 0
 
-            message = "📊 *TRADING STATISTICS* (All-Time)\n\n"
-            message += f"Total Trades: `{total}`\n"
-            message += f"Wins: `{wins}` ({win_rate:.1f}%)\n"
-            message += f"Losses: `{losses}` ({100-win_rate:.1f}%)\n\n"
+            # Escape special characters for Telegram MarkdownV2
+            message = "📊 *TRADING STATISTICS* \\(All\\-Time\\)\\n\\n"
+            message += f"Total Trades: `{total}`\\n"
+            message += f"Wins: `{wins}` \\({win_rate:.1f}%\\)\\n"
+            message += f"Losses: `{losses}` \\({100-win_rate:.1f}%\\)\\n\\n"
 
-            message += f"Total P&L: `${total_pnl:.2f}`\n"
-            message += f"Avg P&L/Trade: `${avg_pnl:.2f}`\n\n"
+            message += f"Total P&L: `${total_pnl:.2f}`\\n"
+            message += f"Avg P&L/Trade: `${avg_pnl:.2f}`\\n\\n"
 
-            message += f"Best: `${best_trade:+.2f}`\n"
-            message += f"Worst: `${worst_trade:+.2f}`\n\n"
+            message += f"Best: `${best_trade:+.2f}`\\n"
+            message += f"Worst: `${worst_trade:+.2f}`\\n\\n"
 
             # Current streak
             state = self.get_bot_state()
