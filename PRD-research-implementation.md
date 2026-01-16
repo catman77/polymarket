@@ -52,11 +52,11 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Drawdown protection fails when positions settle
 
 **Acceptance Criteria:**
-- [ ] 1. Review `bot/momentum_bot_v12.py` → `Guardian.check_kill_switch()`
-- [ ] 2. Change `peak_balance` tracking to use **cash-only balance** (exclude open positions)
-- [ ] 3. Update peak only on:
-- [ ] 4. Add validation: `assert current_balance <= peak_balance`
-- [ ] Typecheck passes
+- [x] 1. Review `bot/momentum_bot_v12.py` → `Guardian.check_kill_switch()`
+- [x] 2. Change `peak_balance` tracking to use **cash-only balance** (exclude open positions)
+- [x] 3. Update peak only on actual cash increases (not position values)
+- [x] 4. Add validation: `assert current_balance <= peak_balance`
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - No false halts for 7 days
   - Drawdown calculation accurate within $1

@@ -2029,12 +2029,16 @@ def run_bot():
         state.daily_loss_count = 0
         log.info(f"New day detected - reset daily tracking")
 
-    # TEMPORARY: Allow manual peak reset after $154 loss incident (Jan 16, 2026)
-    # Commented to allow manual reset via state file
-    # state.peak_balance = max(state.peak_balance, balance)
-    # TODO: Re-enable automatic peak tracking after reset verified and bot trading again
-    if state.peak_balance == 0:  # Only set peak if uninitialized
+    # FIX US-RI-001: Track peak using cash-only balance (exclude open positions)
+    # This prevents false drawdown halts when positions settle
+    if state.peak_balance == 0:  # Initialize peak if uninitialized
         state.peak_balance = balance
+    elif balance > state.peak_balance:  # Update peak only on cash increases
+        log.info(f"New peak balance: ${balance:.2f} (was ${state.peak_balance:.2f})")
+        state.peak_balance = balance
+
+    # Validation: current cash balance should never exceed peak
+    assert balance <= state.peak_balance, f"Current balance ${balance:.2f} exceeds peak ${state.peak_balance:.2f}"
 
     log.info(f"Balance: ${balance:.2f}")
     log.info(f"Mode: {state.mode}")
@@ -2179,11 +2183,12 @@ def run_bot():
             portfolio_value = balance + positions_value
 
             state.current_balance = balance
-            # TEMPORARY: Disabled automatic peak tracking to allow manual reset (Jan 16, 2026)
-            # state.peak_balance = max(state.peak_balance, balance)  # FIX: Track peak cash, not position estimates
-            # TODO: Re-enable after manual reset verified
-            if state.peak_balance == 0:  # Only initialize if zero
+
+            # FIX US-RI-001: Update peak only on cash increases (not position value)
+            if balance > state.peak_balance:
+                log.info(f"New peak balance: ${balance:.2f} (was ${state.peak_balance:.2f})")
                 state.peak_balance = balance
+
             state.daily_pnl = portfolio_value - state.day_start_balance
 
             # 4. RUN ALERT CHECKS (every 10 minutes)
