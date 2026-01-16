@@ -21,9 +21,18 @@ class Vote:
     Standardized vote structure from an expert agent.
 
     All agents return this structure so the coordinator can aggregate them.
+
+    When to use each direction:
+    - "Up": Predict price will increase
+    - "Down": Predict price will decrease
+    - "Neutral": Weak signal, leaning neither direction
+    - "Skip": No signal or uncertain - agent abstains from voting
+
+    Skip votes should have confidence=0.0 and quality=0.0 by convention.
+    Use Skip to prevent default-to-direction bias in unclear situations.
     """
     # Core prediction
-    direction: str  # "Up", "Down", or "Neutral"
+    direction: str  # "Up", "Down", "Neutral", or "Skip"
     confidence: float  # 0.0 to 1.0 (how confident in the direction)
     quality: float  # 0.0 to 1.0 (how good is the signal itself)
 
@@ -37,7 +46,7 @@ class Vote:
 
     def __post_init__(self):
         """Validate vote values."""
-        assert self.direction in ["Up", "Down", "Neutral"], f"Invalid direction: {self.direction}"
+        assert self.direction in ["Up", "Down", "Neutral", "Skip"], f"Invalid direction: {self.direction}"
         assert 0.0 <= self.confidence <= 1.0, f"Confidence must be 0-1, got {self.confidence}"
         assert 0.0 <= self.quality <= 1.0, f"Quality must be 0-1, got {self.quality}"
 

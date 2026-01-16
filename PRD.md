@@ -80,12 +80,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need agents to abstain when uncertain instead of defaulting to a direction, preventing systematic bias.
 
 **Acceptance Criteria:**
-- [ ] Add "Skip" to valid directions in agents/base_agent.py Vote dataclass line 26
-- [ ] Update Vote validation to accept "Skip" as valid direction
-- [ ] Skip votes have confidence=0.0 and quality=0.0 by convention
-- [ ] Add docstring explaining when to return Skip vote
-- [ ] Test: Skip vote can be created without validation errors
-- [ ] Typecheck passes
+- [x] Add "Skip" to valid directions in agents/base_agent.py Vote dataclass line 26
+- [x] Update Vote validation to accept "Skip" as valid direction
+- [x] Skip votes have confidence=0.0 and quality=0.0 by convention
+- [x] Add docstring explaining when to return Skip vote
+- [x] Test: Skip vote can be created without validation errors
+- [x] Typecheck passes
 
 ### US-BF-001: Remove TechAgent default-to-Up bias
 **Description:** As a developer, I need TechAgent to abstain when no clear direction exists so it doesn't create systematic Up bias in neutral markets.
