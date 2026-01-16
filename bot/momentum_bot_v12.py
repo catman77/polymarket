@@ -70,6 +70,14 @@ try:
 except ImportError:
     pass  # Will log warning after logger initialization
 
+# Telegram notification imports
+TELEGRAM_NOTIFICATIONS_AVAILABLE = False
+try:
+    from telegram_bot.telegram_notifier import notify_trade
+    TELEGRAM_NOTIFICATIONS_AVAILABLE = True
+except ImportError:
+    pass  # Will log warning after logger initialization
+
 # Direct SQLite logging for ML trades (avoids import issues)
 import sqlite3
 
@@ -2300,6 +2308,22 @@ def run_bot():
                                 }
                                 # Position tracking happens via epoch_trades, no need to add to guardian
                                 state.last_trade_time = time.time()
+
+                                # Send Telegram notification
+                                if TELEGRAM_NOTIFICATIONS_AVAILABLE:
+                                    try:
+                                        notify_trade(
+                                            crypto=crypto.upper(),
+                                            direction=direction,
+                                            entry_price=entry_price,
+                                            size=size,
+                                            shares=shares,
+                                            confidence=confidence,
+                                            agents_voted=["ML Random Forest"],
+                                            strategy=strategy
+                                        )
+                                    except Exception as e:
+                                        log.warning(f"Telegram notification failed: {e}")
 
                                 # Log ML trade to database
                                 strategy_name = f"ml_live_{strategy}"  # e.g., "ml_live_ml_random_forest"

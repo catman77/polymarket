@@ -217,15 +217,15 @@ Current Streak: 2W
 **Description:** As a bot operator, I need instant notifications when trades are placed so I can monitor bot activity in real-time.
 
 **Acceptance Criteria:**
-- [ ] Create `send_trade_notification(crypto, direction, entry_price, size, confidence)` function
-- [ ] Integrate into `bot/momentum_bot_v12.py` after successful order placement
-- [ ] Show: Crypto, direction, entry price, position size, confidence
-- [ ] Show: Reasoning (which agents voted for this trade)
-- [ ] Include link to Polymarket market page (if available)
-- [ ] Async send (non-blocking, doesn't delay trading)
-- [ ] Handle Telegram API errors gracefully (log but don't crash bot)
-- [ ] Typecheck passes
-- [ ] Test: Place live trade → Receive notification within 2 seconds
+- [x] Create `send_trade_notification(crypto, direction, entry_price, size, confidence)` function
+- [x] Integrate into `bot/momentum_bot_v12.py` after successful order placement
+- [x] Show: Crypto, direction, entry price, position size, confidence
+- [x] Show: Reasoning (which agents voted for this trade)
+- [x] Include link to Polymarket market page (if available)
+- [x] Async send (non-blocking, doesn't delay trading)
+- [x] Handle Telegram API errors gracefully (log but don't crash bot)
+- [x] Typecheck passes
+- [x] Test: Place live trade → Receive notification within 2 seconds
 
 **Example Notification:**
 ```
@@ -241,7 +241,7 @@ Strategy: Contrarian fade
 🔗 View Market
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
 

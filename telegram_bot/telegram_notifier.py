@@ -158,6 +158,116 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Exception while handling an update: {context.error}", exc_info=context.error)
 
 
+# ============================================================================
+# NOTIFICATION FUNCTIONS (for integration with trading bot)
+# ============================================================================
+
+# Global application instance for sending notifications
+_application: Optional[Application] = None
+
+
+def set_application(app: Application):
+    """Set the global application instance for notifications."""
+    global _application
+    _application = app
+
+
+async def send_trade_notification(
+    crypto: str,
+    direction: str,
+    entry_price: float,
+    size: float,
+    shares: int,
+    confidence: float,
+    agents_voted: list[str],
+    strategy: str = "Unknown"
+) -> None:
+    """
+    Send notification when a new trade is placed.
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., "BTC", "ETH")
+        direction: Trade direction ("Up" or "Down")
+        entry_price: Entry price per share
+        size: Position size in USD
+        shares: Number of shares purchased
+        confidence: Confidence score (0-1)
+        agents_voted: List of agent names that voted for this trade
+        strategy: Strategy name (e.g., "Contrarian fade", "Early momentum")
+    """
+    if not NOTIFICATIONS_ENABLED or not _application:
+        return
+
+    try:
+        # Format agent votes
+        agent_votes = ", ".join(agents_voted) if agents_voted else "Unknown"
+
+        # Determine emoji based on strategy
+        strategy_emoji = "🚀"
+        if "contrarian" in strategy.lower():
+            strategy_emoji = "🔄"
+        elif "late" in strategy.lower():
+            strategy_emoji = "✅"
+
+        message = (
+            f"{strategy_emoji} *NEW TRADE*\n\n"
+            f"*{crypto} {direction}* @ ${entry_price:.2f}\n"
+            f"Size: ${size:.2f} ({shares} shares)\n"
+            f"Confidence: {confidence * 100:.1f}%\n\n"
+            f"*Agents:* {agent_votes}\n"
+            f"*Strategy:* {strategy}\n\n"
+            f"⏰ {datetime.now().strftime('%H:%M:%S UTC')}"
+        )
+
+        await _application.bot.send_message(
+            chat_id=AUTHORIZED_USER_ID,
+            text=message,
+            parse_mode='Markdown'
+        )
+        logger.info(f"Trade notification sent: {crypto} {direction}")
+
+    except Exception as e:
+        logger.error(f"Error sending trade notification: {e}", exc_info=True)
+        # Don't raise - notifications should never break trading bot
+
+
+def notify_trade(
+    crypto: str,
+    direction: str,
+    entry_price: float,
+    size: float,
+    shares: int,
+    confidence: float,
+    agents_voted: Optional[list[str]] = None,
+    strategy: str = "Unknown"
+) -> None:
+    """
+    Synchronous wrapper for send_trade_notification.
+    Safe to call from non-async code (e.g., trading bot main loop).
+    """
+    if agents_voted is None:
+        agents_voted = []
+
+    # Run the async function in a new event loop (non-blocking)
+    try:
+        # Create a new event loop for this thread if needed
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_trade_notification(
+            crypto=crypto,
+            direction=direction,
+            entry_price=entry_price,
+            size=size,
+            shares=shares,
+            confidence=confidence,
+            agents_voted=agents_voted,
+            strategy=strategy
+        ))
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error in notify_trade wrapper: {e}", exc_info=True)
+
+
 def main():
     """Start the Telegram bot."""
     if not TELEGRAM_BOT_TOKEN:
@@ -173,6 +283,9 @@ def main():
 
     # Create application
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # Set global application instance for notifications
+    set_application(application)
 
     # Add command handlers
     application.add_handler(CommandHandler("start", start))

@@ -100,3 +100,23 @@ NEXT STEPS:
 
 STATUS: Week 1 (Query Commands) COMPLETE - Ready for user testing
 ========================================
+
+## Iteration 2 - US-TG-006: Real-time trade notifications
+- Implemented send_trade_notification() async function in telegram_notifier.py
+- Created notify_trade() synchronous wrapper for calling from non-async trading bot
+- Integrated notification call in bot/momentum_bot_v12.py after successful order placement
+- Notification includes: crypto, direction, entry price, shares, size, confidence, agents voted, strategy
+- Error handling: Telegram failures logged but don't crash trading bot
+- Uses emoji based on strategy type (🚀 default, 🔄 contrarian, ✅ late confirmation)
+
+Files changed:
+- telegram_bot/telegram_notifier.py: Added send_trade_notification() and notify_trade()
+- bot/momentum_bot_v12.py: Added TELEGRAM_NOTIFICATIONS_AVAILABLE flag and notification call after order placement
+
+Learnings for future iterations:
+- Trading bot is synchronous, so needed notify_trade() wrapper with asyncio.new_event_loop()
+- Global _application instance set in main() to allow notifications from outside bot polling loop
+- Error handling critical: notifications must never crash trading bot
+- Used try/except around notify_trade() call in trading bot for safety
+
+---
