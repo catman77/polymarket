@@ -517,14 +517,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "RegimeAgent classifies markets as bull/bear/sideways/volatile. Is it accurate? Or is it noise?"
 
 **Acceptance Criteria:**
-- [ ] Parse logs for RegimeAgent classifications
-- [ ] Manually validate: Sample 20 epochs, check if regime classification matches chart
-- [ ] Calculate: Classification accuracy (% correct)
-- [ ] Identify: Misclassification patterns (e.g., calls bull when actually choppy)
-- [ ] Generate `reports/eleanor_nash/regime_validation.md`
-- [ ] Report: Accuracy %, confusion matrix, recommendation (improve or acceptable)
-- [ ] Test: Script parses ≥50 regime classifications from logs
-- [ ] Typecheck passes
+- [x] Parse logs for RegimeAgent classifications
+- [x] Manually validate: Sample 20 epochs, check if regime classification matches chart
+- [x] Calculate: Classification accuracy (% correct)
+- [x] Identify: Misclassification patterns (e.g., calls bull when actually choppy)
+- [x] Generate `reports/eleanor_nash/regime_validation.md`
+- [x] Report: Accuracy %, confusion matrix, recommendation (improve or acceptable)
+- [x] Test: Script parses ≥50 regime classifications from logs
+- [x] Typecheck passes
 
 #### US-RC-031: Calculate strategy performance by regime
 **Persona Context:** "Does contrarian work in sideways markets? Does momentum work in trending markets? Data will reveal regime-strategy fit."

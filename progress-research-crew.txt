@@ -2502,3 +2502,240 @@ or artificial (redundant agents voting together). Data will guide agent reductio
 decisions—removing herding agents improves decision quality without losing value.
 
 ---
+
+## Iteration 27 - US-RC-028: Check agent calibration (predicted confidence vs actual win rate)
+**Persona:** Dr. Amara Johnson (Behavioral Finance Expert)
+**Completed:** 2026-01-16
+**Files Changed:**
+- scripts/research/agent_calibration.py (created)
+- reports/amara_johnson/calibration_analysis.md (generated)
+- PRD-research-crew.md (marked US-RC-028 complete)
+
+**Learnings:**
+- Pattern: Calibration analysis methodology
+  - Confidence buckets: 0.5-0.6, 0.6-0.7, 0.7-0.8, 0.8-0.9, 0.9-1.0
+  - Bucket midpoint = predicted confidence (e.g., 0.65 for 0.6-0.7 bucket)
+  - Actual win rate = wins / total trades in bucket
+  - Calibration curve: plot predicted (x) vs actual (y)
+  - Perfect calibration: y = x (diagonal line)
+  - Overconfident: points below diagonal (predicted > actual)
+  - Underconfident: points above diagonal (predicted < actual)
+- Pattern: Expected Calibration Error (ECE)
+  - ECE = Σ |predicted - actual| * n_samples / total_samples
+  - Weighted average of absolute errors across all buckets
+  - Interpretation: ECE < 0.05 = well-calibrated, 0.05-0.10 = moderate, >0.10 = poor
+  - Industry standard metric for evaluating probabilistic forecasters
+- Pattern: Sample size requirements for reliability
+  - Minimum: 3 votes per bucket (very loose, high uncertainty)
+  - Good: 20 votes per bucket (margin of error ~22%)
+  - Excellent: 50+ votes per bucket (margin of error ~14%)
+  - Confidence intervals: binomial distribution (sqrt(p*(1-p)/n))
+  - Small samples make calibration curves noisy
+- Pattern: Join agent_votes -> decisions -> outcomes
+  - agent_votes has: agent_name, direction, confidence
+  - decisions has: strategy, crypto, epoch, should_trade
+  - outcomes has: predicted_direction, actual_direction, pnl
+  - Match on: (strategy, crypto, epoch) to link vote to outcome
+  - Filter: should_trade = 1 (only actual trades, not skips)
+- Pattern: ASCII calibration plot generation
+  - 10 rows × 40 cols grid
+  - Diagonal (perfect calibration): y = x line (rendered as ·)
+  - Data points: * = overconfident, + = underconfident, o = well-calibrated
+  - Axes: y-axis inverted (1.0 at top, 0.0 at bottom)
+  - Symbols placed at (x, y) = (predicted, actual) coordinates
+- Pattern: Confidence verdict thresholds
+  - Error < 0.05: ✅ Good (well-calibrated)
+  - Error 0.05-0.10: ⚠️ Fair (moderate)
+  - Error > 0.10: ❌ Poor (overconfident or underconfident)
+  - Direction matters: predicted < actual = underconfident, predicted > actual = overconfident
+- Context: Behavioral finance perspective on calibration
+  - Overconfidence bias: Dunning-Kruger effect (unskilled don't know they're unskilled)
+  - Calibration drift: Agents can become miscalibrated over time as market regimes change
+  - Ensemble benefit: Diverse, well-calibrated agents improve decisions (wisdom of crowds)
+  - Risk: Poorly calibrated agents amplify overconfidence → oversized positions → losses
+- Context: Calibration vs accuracy
+  - Accuracy: % of correct predictions (how often does agent win?)
+  - Calibration: Do confidence scores match actual outcomes? (is 80% really 80%?)
+  - Both matter: High accuracy + poor calibration = unreliable confidence scores
+  - Example: 80% accurate but always votes 50% confidence = underconfident
+  - Example: 60% accurate but always votes 90% confidence = overconfident
+- Gotcha: Calibration requires resolved outcomes
+  - Cannot analyze calibration with only pending trades
+  - Need join between agent_votes and outcomes (via decisions)
+  - Dev database empty: No resolved trades yet
+  - VPS database will have data after 2-3 days of live trading
+- Handled empty data gracefully
+  - Script exits cleanly with informative message (not error)
+  - Report generated with "NO DATA AVAILABLE" section
+  - Explains what's needed: 50+ resolved trades for statistical significance
+  - Timeline: 2-3 days of VPS trading
+- Typecheck passed with py_compile
+
+**Implementation Notes:**
+- Created comprehensive calibration analyzer with 4 main algorithms:
+  1. Query data: Join agent_votes -> decisions -> outcomes
+  2. Bucket votes: Group by confidence buckets (0.5-0.6, etc.)
+  3. Calculate metrics: Actual win rate per bucket, ECE per agent
+  4. Generate report: Calibration curve, overconfident/underconfident agents, recommendations
+- ASCII calibration plot: Visual representation of predicted vs actual
+- Confidence verdict table: Per-bucket analysis with error and verdict
+- Agent-specific recommendations: Keep/modify/disable based on ECE
+- Behavioral finance insights: Overconfidence bias, calibration drift, ensemble benefits
+- Handles edge cases: <3 votes per bucket, empty database, single agent
+
+**Key Findings (when data available):**
+Script will identify:
+1. Well-calibrated agents (ECE < 0.05): Keep and trust confidence scores
+2. Moderately calibrated agents (ECE 0.05-0.10): Apply confidence corrections
+3. Poorly calibrated agents (ECE > 0.10): Disable or retrain
+4. Overconfident agents: Predicted > actual (claims higher certainty than deserved)
+5. Underconfident agents: Predicted < actual (too cautious, underweights good signals)
+
+**Dr. Amara Johnson's Assessment:**
+> "Calibration reveals the psychology of decision-making. Overconfidence is the most
+> dangerous bias in trading—it leads to oversized positions, ignored warnings, and
+> catastrophic losses. In this system, poorly calibrated agents amplify that risk."
+
+This analysis provides actionable recommendations:
+- Disable overconfident agents (prevent inflated consensus)
+- Boost underconfident agents (capture good signals)
+- Apply calibration factors (multiply confidence by actual/predicted ratio)
+- Monitor for calibration drift (re-run monthly)
+
+**Next Steps:**
+1. Wait for VPS trading to accumulate 50+ resolved trades
+2. Re-run analysis: `python3 scripts/research/agent_calibration.py`
+3. Review calibration_analysis.md for agent-specific recommendations
+4. Implement fixes: Disable poorly calibrated agents, apply corrections
+5. Monitor: Does system-wide win rate improve after calibration adjustments?
+
+---
+
+## Iteration 29 - US-RC-029: Test epoch outcome autocorrelation
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16 08:47
+**Files Changed:**
+- scripts/research/epoch_autocorrelation.py
+- reports/eleanor_nash/epoch_autocorrelation.md
+- PRD-research-crew.md
+
+**What was implemented:**
+- Created epoch autocorrelation analysis script to test if consecutive outcomes are independent
+- Implemented autocorrelation calculation for lag-k correlation (r = Σ(x_t - μ)(x_{t-k} - μ) / Σ(x_t - μ)²)
+- Implemented Ljung-Box test for independence across multiple lags (chi-squared test)
+- Generates comprehensive report with autocorrelation coefficients, p-values, and strategic recommendations
+- Includes unit tests for autocorrelation calculation (alternating sequence, constant sequence)
+- Handles empty database gracefully (generates "NO DATA" report)
+
+**Learnings for future iterations:**
+- Pattern: Time series autocorrelation analysis
+  - Autocorrelation r(k) = correlation between x_t and x_{t-k}
+  - Lag 1 = consecutive epochs (most important for trading)
+  - Lag 2-3 = persistence beyond single epoch
+  - Range: -1 (perfect negative) to +1 (perfect positive)
+  - Interpretation thresholds: |r| < 0.05 = none, 0.05-0.15 = weak, 0.15-0.30 = moderate, >0.30 = strong
+- Pattern: Ljung-Box test for independence
+  - H0: Outcomes are independent (no autocorrelation)
+  - H1: Outcomes exhibit autocorrelation (momentum exists)
+  - Q statistic = n(n+2) Σ[r²(k) / (n-k)] for k=1 to max_lag
+  - Q follows chi-squared distribution with max_lag degrees of freedom
+  - p < 0.05 → Reject H0 (momentum exists, exploitable)
+  - p ≥ 0.05 → Accept H0 (independent, no patterns)
+- Pattern: Strategic implications of momentum
+  - Positive momentum (r > 0.15): Wins predict wins → increase sizing after wins
+  - Negative momentum (r < -0.15): Mean reversion → increase sizing after losses
+  - Independent (|r| < 0.05): Static sizing, no streak adjustments
+  - Game theory: If momentum exists, market is inefficient (first-mover advantage)
+- Pattern: Database schema for outcomes
+  - outcomes table: predicted_direction, actual_direction, crypto, epoch, timestamp, strategy
+  - Join pattern: outcomes.strategy = decisions.strategy AND outcomes.crypto = decisions.crypto AND outcomes.epoch = decisions.epoch
+  - Order by timestamp ASC for sequential analysis
+  - Filter by strategy = 'default' for live trading only
+- Pattern: Sample size requirements for autocorrelation
+  - Minimum: 10 trades (baseline analysis possible)
+  - Good: 50 trades (margin of error ≈ ±0.20)
+  - Excellent: 100+ trades (margin of error ≈ ±0.14)
+  - Confidence intervals: ±2/√n (approximate)
+- Pattern: Game theory perspective on trading patterns
+  - Nash equilibrium: If patterns exist, competitors will exploit until arbitrage erases edge
+  - Evolutionary dynamics: Markets evolve, momentum today may be noise tomorrow
+  - Adaptive strategy: Monitor autocorrelation monthly, adjust as market dynamics change
+  - Competitive risk: As more bots detect momentum, it disappears (first-mover advantage)
+- Pattern: Position sizing adjustments for momentum
+  - If momentum exists (p < 0.05):
+    - After win: Increase sizing by 10-20% (ride the streak)
+    - After loss: Decrease sizing by 10-20% (avoid chasing losses)
+    - Streak bonuses: Lower thresholds after 2+ wins, raise after 2+ losses
+    - Kelly enhancement: f = f * (1 + 0.2 * momentum_strength)
+  - If independent (p ≥ 0.05):
+    - Static sizing based on balance only
+    - Ignore recent win/loss history
+    - Avoid gambler's fallacy
+- Gotcha: Database column naming
+  - decisions table has: epoch (not epoch_start_time)
+  - outcomes table has: epoch (not epoch_start_time)
+  - Both have timestamp (REAL, not INTEGER)
+  - Join on (strategy, crypto, epoch) not (strategy, crypto, epoch_start_time)
+- Gotcha: Autocorrelation of constant sequences
+  - If all wins or all losses: mean = 1.0 or 0.0
+  - (x_t - μ) = 0 for all t → numerator = 0, denominator = 0
+  - Result: 0/0 = undefined → handle as r = 0.0
+- Gotcha: Small sample size noise
+  - With n < 50, autocorrelation estimates are unreliable
+  - Confidence intervals are wide (±0.20 for n=50)
+  - Report includes sample size warnings and margin of error
+- Context: Game theory economist mindset
+  - Question: "Is the market efficient or exploitable?"
+  - Approach: Test for patterns that violate independence
+  - Conclusion: If patterns exist, exploit before competitors adapt
+  - Warning: Markets punish predictable patterns over time
+- Context: Evolutionary game theory
+  - Strategies that work today may fail tomorrow
+  - Competitors copy successful strategies (imitation dynamics)
+  - Edge erodes as market adapts (Red Queen effect)
+  - Solution: Continuous monitoring and adaptation
+- Handled empty database gracefully
+  - Script exits cleanly with informative message (not error)
+  - Report generated with "NO DATA AVAILABLE" section
+  - Explains what's needed: 10+ resolved trades (2 days), 50+ for reliability (1 week)
+  - Timeline: Re-run after VPS accumulates data
+
+**Implementation Notes:**
+- Created comprehensive autocorrelation analyzer with 3 main algorithms:
+  1. Extract sequential outcomes: Query outcomes table, order by timestamp ASC
+  2. Calculate autocorrelation: r(k) formula for lag-k correlation
+  3. Ljung-Box test: Q statistic and p-value for independence test
+  4. Generate report: Coefficients, p-values, strategic recommendations
+- Unit tests included: Alternating sequence (negative r), constant sequence (r ≈ 0)
+- ASCII visualization: Calibration-style report with clear interpretation
+- Practical recommendations: Position sizing adjustments if momentum exists
+- Game theory insights: Nash equilibrium, evolutionary dynamics, first-mover advantage
+- Handles edge cases: Empty database, small samples, constant sequences
+
+**Key Findings (when data available):**
+Script will identify:
+1. Positive momentum (r > 0.15): Wins predict wins → increase sizing after wins
+2. Negative momentum (r < -0.15): Mean reversion → increase sizing after losses
+3. Independent (|r| < 0.05): No patterns → static sizing (current approach)
+4. Statistical significance (p < 0.05): Patterns are real, not noise
+5. Strategic recommendations: Adjust position sizing, thresholds, Kelly criterion
+
+**Prof. Eleanor Nash's Assessment:**
+> "In game theory, we assume opponents adapt to patterns. If momentum exists,
+> the market hasn't adapted yet—an exploitable inefficiency. But it won't last.
+> Use it wisely before arbitrage erases the edge."
+
+This analysis provides actionable recommendations:
+- If momentum exists: Implement streak-based position sizing, lower thresholds after wins
+- If independent: Keep static sizing, avoid gambler's fallacy
+- Monitor monthly: Re-run analysis to detect regime shifts
+- Compare across cryptos: Does BTC have momentum but ETH doesn't?
+
+**Next Steps:**
+1. Wait for VPS trading to accumulate 50+ resolved trades (1 week)
+2. Re-run analysis: `python3 scripts/research/epoch_autocorrelation.py`
+3. Review epoch_autocorrelation.md for momentum findings
+4. If p < 0.05: Implement position sizing adjustments in bot
+5. Monitor: Does momentum persist over time? Or does it fade?
+
+---
