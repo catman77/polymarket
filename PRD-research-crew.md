@@ -121,14 +121,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If starting_balance + sum(pnl) ≠ current_balance, there's a data integrity issue or hidden transactions."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/reconcile_balance.py`
-- [ ] Extract from logs: All deposits, withdrawals, trade P&L
-- [ ] Calculate: starting_balance + deposits - withdrawals + sum(trade_pnl)
-- [ ] Compare to `state/trading_state.json` → current_balance
-- [ ] Generate `reports/kenji_nakamoto/balance_reconciliation.md`
-- [ ] Report: Expected vs actual balance, discrepancy amount, % error
-- [ ] Test: Reconciliation within $1 of actual balance OR discrepancy explained
-- [ ] Typecheck passes
+- [x] Create `scripts/research/reconcile_balance.py`
+- [x] Extract from logs: All deposits, withdrawals, trade P&L
+- [x] Calculate: starting_balance + deposits - withdrawals + sum(trade_pnl)
+- [x] Compare to `state/trading_state.json` → current_balance
+- [x] Generate `reports/kenji_nakamoto/balance_reconciliation.md`
+- [x] Report: Expected vs actual balance, discrepancy amount, % error
+- [x] Test: Reconciliation within $1 of actual balance OR discrepancy explained
+- [x] Typecheck passes
 
 #### US-RC-004: Verify 10 trades on-chain (Polygon)
 **Persona Context:** "On-chain data is the ground truth. If bot logs don't match blockchain, we have a serious problem."
