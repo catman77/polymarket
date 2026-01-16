@@ -736,30 +736,30 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "All the research is done. Now I need to translate insights into executable code changes. Create a new PRD that Ralph can execute autonomously."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/generate_implementation_prd.py`
-- [ ] Read all synthesis documents:
+- [x] Create `scripts/research/generate_implementation_prd.py`
+- [x] Read all synthesis documents:
   - `reports/RESEARCH_SYNTHESIS.md` (top 10 priorities)
   - `reports/DEPLOYMENT_ROADMAP.md` (timeline and milestones)
   - Individual researcher reports from `reports/*/`
-- [ ] Extract actionable items from each priority:
+- [x] Extract actionable items from each priority:
   - Code files to modify (agents, config, bot logic)
   - Specific changes needed (disable agent X, raise threshold Y to Z)
   - Test criteria (how to verify it works)
   - Success metrics (win rate improvement expected)
-- [ ] Generate `PRD-research-implementation.md` with structure:
+- [x] Generate `PRD-research-implementation.md` with structure:
   - Introduction (references research synthesis)
   - Goals (60-65% WR, identified improvements)
   - User stories (US-RI-001 to US-RI-XXX, one per actionable change)
   - Each US format: Description, Acceptance Criteria with checkboxes, File paths, Test requirements
-- [ ] Auto-prioritize: Quick wins first (Week 1), then medium effort (Week 2-3), long-term (Week 4)
-- [ ] Include rollback plan for each change (how to undo if it fails)
-- [ ] Generate companion `progress-research-implementation.txt` (empty, ready for Ralph)
-- [ ] Add execution instructions: `./ralph.sh PRD-research-implementation.md 50 2`
-- [ ] Test: Generated PRD has valid markdown syntax
-- [ ] Test: Generated PRD has ≥10 user stories (one per top priority)
-- [ ] Test: Each user story has file paths that exist in codebase
-- [ ] Output message: "✅ Implementation PRD generated. Run: ./ralph.sh PRD-research-implementation.md 50 2"
-- [ ] Typecheck passes
+- [x] Auto-prioritize: Quick wins first (Week 1), then medium effort (Week 2-3), long-term (Week 4)
+- [x] Include rollback plan for each change (how to undo if it fails)
+- [x] Generate companion `progress-research-implementation.txt` (empty, ready for Ralph)
+- [x] Add execution instructions: `./ralph.sh PRD-research-implementation.md 50 2`
+- [x] Test: Generated PRD has valid markdown syntax
+- [x] Test: Generated PRD has ≥10 user stories (one per top priority) - Generated 11 stories
+- [x] Test: Each user story has file paths that exist in codebase
+- [x] Output message: "✅ Implementation PRD generated. Run: ./ralph.sh PRD-research-implementation.md 50 2"
+- [x] Typecheck passes
 
 **Expected Output Example:**
 ```markdown
