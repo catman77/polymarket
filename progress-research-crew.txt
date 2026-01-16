@@ -1912,3 +1912,73 @@
 - Successfully generates both markdown and CSV even with no data
 
 ---
+
+## Iteration 21 - US-RC-021: Test ML model on post-training data
+**Persona:** Victor "Vic" Ramanujan (Quantitative Strategist)
+**Completed:** 2026-01-16 19:30
+**Files Changed:**
+- scripts/research/ml_performance_analysis.py (created)
+- reports/vic_ramanujan/ml_vs_agents.md (created)
+- reports/vic_ramanujan/ml_vs_agents.csv (created)
+- PRD-research-crew.md (marked US-RC-021 complete)
+
+**Learnings:**
+- Pattern: ML strategies defined in config but not in shadow trading database
+  - Strategies exist in `simulation/strategy_configs.py` but never executed
+  - Database only has `ml_live_test` strategy, no data from ml_random_forest_* variants
+  - Tool gracefully handles missing data, generates report with recommendations
+- Pattern: SQLite performance table tracks snapshots over time
+  - Each trade resolution creates new performance row
+  - Need ORDER BY timestamp DESC LIMIT 1 to get latest metrics
+  - Older snapshots show strategy evolution
+- Pattern: Agent confidence averaging requires filtering should_trade=1
+  - Only count decisions where strategy actually traded
+  - Skip decisions >= 0 confidence (some agents abstain with NULL)
+- Gotcha: Strategy may exist in config but not be activated
+  - SHADOW_STRATEGIES list in agent_config.py controls what runs
+  - ML strategies probably not in active list
+  - Tool detects this and recommends enabling
+- Context: ML claimed 67.3% test accuracy but never deployed
+  - Gap between testing and production suggests integration issues
+  - Could be: model file missing, feature mismatch, confidence in agents
+  - Report recommends shadow testing ML before deployment decision
+- Context: Proper ML evaluation requires ≥30 trades minimum
+  - <10 trades: meaningless (noise)
+  - 10-30 trades: early signal but unreliable
+  - 30-100 trades: sufficient for initial assessment
+  - 100+ trades: statistically confident
+- Context: Significance threshold set at 3% for deployment decision
+  - ML must beat agents by >3% WR to justify switching
+  - Accounts for statistical noise and implementation risk
+  - Marginal improvements (<3%) not worth deployment complexity
+
+**Implementation Notes:**
+- Created comprehensive ML performance analyzer
+- Queries shadow trading database for ML strategies and agent baseline
+- Handles missing data gracefully (no trades yet = recommendations to enable)
+- Compares actual WR to claimed test accuracy (67.3%)
+- Compares ML to agent baseline performance
+- Generates both markdown report and CSV export
+- Report structure:
+  1. Executive summary (data availability check)
+  2. ML strategy details (win rate, P&L, ROI, confidence)
+  3. Agent baseline performance
+  4. Statistical comparison (ML vs agents)
+  5. Deployment recommendation (based on significance threshold)
+  6. Conclusion with next steps
+- CSV format: strategy_name, type, trades, wins, losses, WR, P&L, ROI, confidence, vs_test, vs_agents
+- Tool detects: No ML strategies have traded yet (0 trades all)
+- Recommendations generated:
+  - Enable ML shadow trading in config
+  - Run bot 24-48 hours minimum
+  - Re-run analysis after data collection
+  - Investigate why ML not deployed despite 67.3% test claim
+- Typecheck passed with py_compile
+- Script successfully queries database and generates reports even with no data
+
+**Key Finding:**
+ML strategies exist in codebase but haven't been tested in production.
+Report provides clear path forward: enable shadow trading, collect data, re-analyze.
+Cannot make ML deployment decision without actual performance data.
+
+---

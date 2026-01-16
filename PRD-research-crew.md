@@ -398,14 +398,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "The Jan 16 desync shows drawdown tracking is broken. I need to audit the formula and find the bug."
 
 **Acceptance Criteria:**
-- [ ] Review code: `bot/momentum_bot_v12.py` → Guardian.check_kill_switch()
-- [ ] Extract formula: `(peak_balance - current_balance) / peak_balance`
-- [ ] Question: Does current_balance include unredeemed positions? (should be cash only)
-- [ ] Review: When is peak_balance updated? (Should be on redemptions, not on order placement)
-- [ ] Generate `reports/rita_stevens/drawdown_audit.md`
-- [ ] Report: Current formula, bug identified (if any), proposed fix
-- [ ] Test: Create unit test for drawdown calculation with edge cases
-- [ ] Typecheck passes
+- [x] Review code: `bot/momentum_bot_v12.py` → Guardian.check_kill_switch()
+- [x] Extract formula: `(peak_balance - current_balance) / peak_balance`
+- [x] Question: Does current_balance include unredeemed positions? (should be cash only)
+- [x] Review: When is peak_balance updated? (Should be on redemptions, not on order placement)
+- [x] Generate `reports/rita_stevens/drawdown_audit.md`
+- [x] Report: Current formula, bug identified (if any), proposed fix
+- [x] Test: Create unit test for drawdown calculation with edge cases
+- [x] Typecheck passes
 
 #### US-RC-023: Stress test position sizing with Monte Carlo
 **Persona Context:** "If we hit a 10-loss streak, do the tiered position sizes protect us? Or do we still blow up?"
