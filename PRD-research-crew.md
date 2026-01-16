@@ -147,14 +147,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Is the 56-60% win rate cherry-picked from good periods? I need to check if any time periods are excluded."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/survivorship_bias_check.py`
-- [ ] Parse all trade timestamps, identify date range coverage
-- [ ] Check for gaps: Missing days (>24h between trades)
-- [ ] Calculate win rate per day, per week
-- [ ] Generate `reports/kenji_nakamoto/survivorship_bias_report.md`
-- [ ] Report: Full date range, gaps found (if any), win rate by period
-- [ ] Test: Script identifies all gaps >24h in trade history
-- [ ] Typecheck passes
+- [x] Create `scripts/research/survivorship_bias_check.py`
+- [x] Parse all trade timestamps, identify date range coverage
+- [x] Check for gaps: Missing days (>24h between trades)
+- [x] Calculate win rate per day, per week
+- [x] Generate `reports/kenji_nakamoto/survivorship_bias_report.md`
+- [x] Report: Full date range, gaps found (if any), win rate by period
+- [x] Test: Script identifies all gaps >24h in trade history
+- [x] Typecheck passes
 
 ---
 
