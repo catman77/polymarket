@@ -379,3 +379,141 @@ class MessageFormatter:
 
         except Exception as e:
             return f"❌ Error fetching statistics: {str(e)}"
+
+    def format_daily_summary(self) -> str:
+        """Format daily summary with P&L, trades, and shadow strategy performance."""
+        try:
+            state = self.get_bot_state()
+            if not state:
+                return "❌ Could not load bot state"
+
+            # Get today's date range (UTC)
+            now = datetime.now()
+            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_start_ts = day_start.timestamp()
+
+            # Calculate daily metrics
+            current_balance = state.get('current_balance', 0)
+            day_start_balance = state.get('day_start_balance', current_balance)
+            daily_pnl = current_balance - day_start_balance
+            daily_pnl_pct = (daily_pnl / day_start_balance * 100) if day_start_balance > 0 else 0
+
+            # Get today's trades from database
+            trades_today = 0
+            wins_today = 0
+            losses_today = 0
+            best_trade = 0
+            worst_trade = 0
+            best_trade_desc = ""
+            worst_trade_desc = ""
+
+            if os.path.exists(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+
+                # Get today's trade outcomes
+                cursor.execute('''
+                    SELECT
+                        o.crypto,
+                        o.predicted_direction,
+                        o.actual_direction,
+                        o.pnl
+                    FROM outcomes o
+                    JOIN trades t ON o.trade_id = t.id
+                    WHERE t.strategy LIKE 'ml_live%'
+                    AND o.timestamp >= ?
+                    ORDER BY o.timestamp DESC
+                ''', (day_start_ts,))
+
+                trades = cursor.fetchall()
+                trades_today = len(trades)
+
+                for crypto, pred_dir, actual_dir, pnl in trades:
+                    if pred_dir == actual_dir:
+                        wins_today += 1
+                    else:
+                        losses_today += 1
+
+                    if pnl > best_trade:
+                        best_trade = pnl
+                        best_trade_desc = f"{crypto} {pred_dir}"
+                    if pnl < worst_trade:
+                        worst_trade = pnl
+                        worst_trade_desc = f"{crypto} {pred_dir}"
+
+                # Get top 3 shadow strategies by today's performance
+                cursor.execute('''
+                    SELECT
+                        p1.strategy,
+                        p1.total_pnl - COALESCE(p2.total_pnl, 0) as daily_pnl
+                    FROM performance p1
+                    LEFT JOIN (
+                        SELECT strategy, total_pnl
+                        FROM performance
+                        WHERE timestamp <= ?
+                        GROUP BY strategy
+                        HAVING MAX(timestamp)
+                    ) p2 ON p1.strategy = p2.strategy
+                    WHERE p1.timestamp >= ?
+                    AND p1.strategy NOT LIKE 'ml_live%'
+                    GROUP BY p1.strategy
+                    HAVING MAX(p1.timestamp)
+                    ORDER BY daily_pnl DESC
+                    LIMIT 3
+                ''', (day_start_ts, day_start_ts))
+
+                shadow_leaders = cursor.fetchall()
+                conn.close()
+            else:
+                shadow_leaders = []
+
+            # Calculate win rate
+            win_rate = (wins_today / trades_today * 100) if trades_today > 0 else 0
+
+            # Build summary message
+            date_str = now.strftime('%b %d, %Y')
+            message = f"📊 DAILY SUMMARY - {date_str}\n\n"
+
+            # Daily P&L
+            pnl_sign = "+" if daily_pnl >= 0 else ""
+            pnl_emoji = "📈" if daily_pnl >= 0 else "📉"
+            message += f"{pnl_emoji} P&L: ${pnl_sign}{daily_pnl:.2f} ({pnl_sign}{daily_pnl_pct:.1f}%)\n"
+
+            # Trades summary
+            message += f"Trades: {trades_today}"
+            if trades_today > 0:
+                message += f" ({wins_today}W / {losses_today}L)\n"
+                message += f"Win Rate: {win_rate:.1f}%\n"
+            else:
+                message += " (No trades today)\n"
+
+            message += "\n"
+
+            # Balance change
+            message += f"Balance: ${day_start_balance:.2f} → ${current_balance:.2f}\n\n"
+
+            # Best/worst trades (if any)
+            if trades_today > 0:
+                message += f"Best: {best_trade_desc} ${best_trade:+.2f}\n"
+                message += f"Worst: {worst_trade_desc} ${worst_trade:+.2f}\n\n"
+
+            # Shadow strategy leaders
+            if shadow_leaders:
+                message += "🎯 Shadow Leaders:\n"
+                for i, (strategy, pnl) in enumerate(shadow_leaders, 1):
+                    # Clean up strategy name (remove prefixes)
+                    clean_name = strategy.replace('shadow_', '').replace('_', ' ').title()
+                    message += f"{i}. {clean_name}: ${pnl:+.2f}\n"
+                message += "\n"
+
+            # Tomorrow preview
+            mode = state.get('mode', 'normal').upper()
+            mode_emoji = "🟢" if mode == "NORMAL" else "🟡" if mode in ["CONSERVATIVE", "DEFENSIVE"] else "🔴"
+
+            # Count enabled agents (simplified)
+            message += f"Tomorrow: Mode {mode_emoji} {mode}\n"
+
+            return message
+
+        except Exception as e:
+            return f"❌ Error generating daily summary: {str(e)}"

@@ -167,3 +167,27 @@ Learnings for future iterations:
 - --test flag in alert_system.py generates test alerts for verification
 
 ---
+## Iteration 5 - US-TG-009: Daily summary notifications
+- Implemented format_daily_summary() in message_formatter.py (113 lines)
+- Created send_daily_summary() and notify_daily_summary() in telegram_notifier.py
+- Created daily_summary_scheduler.py for scheduled daily summaries
+- Scheduler supports two modes: cron job (--now flag) or daemon
+- Summary includes: Daily P&L, trades, win/loss breakdown, best/worst trades, shadow strategy leaders, tomorrow's mode
+- Database queries filter by timestamp >= day_start (UTC midnight)
+- Shadow leaders ranked by daily P&L (difference between end-of-day and start-of-day performance)
+
+Files changed:
+- telegram_bot/message_formatter.py: Added format_daily_summary() method
+- telegram_bot/telegram_notifier.py: Added send_daily_summary() and notify_daily_summary()
+- telegram_bot/daily_summary_scheduler.py: NEW - standalone scheduler script (79 lines)
+- PRD.md: Marked US-TG-009 as complete
+
+Learnings for future iterations:
+- Daily summary queries use timestamp filtering to get today's trades only
+- Shadow strategy comparison uses LEFT JOIN to calculate daily P&L delta
+- Scheduler can run as cron job (simple, recommended) or daemon (continuous process)
+- Cron job command: `59 23 * * * cd /opt/polymarket-autotrader && source venv/bin/activate && python3 telegram_bot/daily_summary_scheduler.py --now`
+- Same async wrapper pattern used as other notifications (new event loop per call)
+- Summary uses plain text formatting (no Markdown) to avoid parsing errors
+
+---

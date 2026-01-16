@@ -427,6 +427,45 @@ def notify_alert(level: str, title: str, message: str) -> None:
         logger.error(f"Error in notify_alert wrapper: {e}", exc_info=True)
 
 
+async def send_daily_summary() -> None:
+    """
+    Send daily summary notification with P&L, trades, and shadow strategy performance.
+    Should be called at end of day (23:59 UTC).
+    """
+    if not NOTIFICATIONS_ENABLED or not _application:
+        return
+
+    try:
+        formatter = MessageFormatter()
+        message = formatter.format_daily_summary()
+
+        await _application.bot.send_message(
+            chat_id=AUTHORIZED_USER_ID,
+            text=message
+        )
+        logger.info("Daily summary notification sent")
+
+    except Exception as e:
+        logger.error(f"Error sending daily summary notification: {e}", exc_info=True)
+        # Don't raise - notifications should never crash
+
+
+def notify_daily_summary() -> None:
+    """
+    Synchronous wrapper for send_daily_summary.
+    Safe to call from non-async code (e.g., scheduled task).
+    """
+    # Run the async function in a new event loop (non-blocking)
+    try:
+        # Create a new event loop for this thread if needed
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_daily_summary())
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error in notify_daily_summary wrapper: {e}", exc_info=True)
+
+
 def main():
     """Start the Telegram bot."""
     if not TELEGRAM_BOT_TOKEN:

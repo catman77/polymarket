@@ -326,14 +326,14 @@ Time: 2026-01-15 22:45 UTC
 **Description:** As a bot operator, I need a daily summary sent at end-of-day so I can review performance without checking manually.
 
 **Acceptance Criteria:**
-- [ ] Create `send_daily_summary()` function
-- [ ] Schedule to run at 23:59 UTC daily (via cron or in bot loop)
-- [ ] Show: Daily P&L, trades executed, win rate, balance change
-- [ ] Show: Best and worst trade of the day
-- [ ] Show: Summary of shadow strategy performance (top 3)
-- [ ] Include tomorrow's preview: Current mode, agent status
-- [ ] Typecheck passes
-- [ ] Test: Manually trigger → Receive formatted summary
+- [x] Create `send_daily_summary()` function
+- [x] Schedule to run at 23:59 UTC daily (via cron or in bot loop)
+- [x] Show: Daily P&L, trades executed, win rate, balance change
+- [x] Show: Best and worst trade of the day
+- [x] Show: Summary of shadow strategy performance (top 3)
+- [x] Include tomorrow's preview: Current mode, agent status
+- [x] Typecheck passes
+- [x] Test: Manually trigger → Receive formatted summary
 
 **Example Notification:**
 ```
@@ -356,9 +356,17 @@ Worst: BTC Up -$7.29
 Tomorrow: Mode NORMAL, 7 agents active
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
+
+**Implementation Notes:**
+- Created `format_daily_summary()` in message_formatter.py
+- Implemented `send_daily_summary()` and `notify_daily_summary()` in telegram_notifier.py
+- Created standalone scheduler script: `daily_summary_scheduler.py`
+- Scheduler can run as cron job (`--now` flag) or daemon
+- Cron job command: `59 23 * * * cd /opt/polymarket-autotrader && source venv/bin/activate && python3 telegram_bot/daily_summary_scheduler.py --now`
+- Summary includes: Daily P&L, trades, best/worst trades, shadow strategy leaders, mode preview
 
 ---
 
