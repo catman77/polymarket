@@ -383,3 +383,110 @@
 
 ---
 
+
+## Iteration 7 - Task 6.3: VPS Operational Health Check
+**Persona:** Dmitri "The Hammer" Volkov (System Reliability Engineer)
+**Completed:** 2026-01-16 10:35
+**Files Changed:**
+- scripts/research/vps_health_check.py (created)
+- reports/dmitri_volkov/vps_health_report.md (generated)
+
+**Learnings:**
+- Pattern: VPS health checks need graceful degradation for dev environment
+  - Can't access VPS from dev machine - check local files instead
+  - Return placeholder data with clear "VPS not accessible" messages
+  - Use vps_accessible flag to switch between prod and dev behavior
+- Pattern: File permission checking using os.stat() and bitwise operations
+  - mode & 0o077 checks if group/other have any permissions
+  - chmod 600 = owner read/write only (0o077 = group/other permissions)
+  - chmod 700 = owner full access only (directories)
+- Pattern: Security audit categories by severity (CRITICAL/HIGH/MEDIUM/LOW)
+  - CRITICAL: Exposed private keys, critical service down
+  - HIGH: Insecure file permissions, credential exposure
+  - MEDIUM: Missing configurations, directory permissions
+  - LOW: Informational, dev environment differences
+- Pattern: Health grade calculation using multiple factors
+  - Service status, resource usage, security issues, log management
+  - Critical security issue OR service down → CRITICAL grade
+  - High security OR log issues OR deploy issues → NEEDS_IMPROVEMENT
+  - Resource issues OR no monitoring → ACCEPTABLE
+  - Minor issues → GOOD
+  - No issues → EXCELLENT
+- Gotcha: df command output format varies by system
+  - Use split() carefully and check array bounds
+  - Parse percentage by removing '%' character
+- Gotcha: os.walk() can recurse into venv/ and node_modules/
+  - Always skip these directories (performance + false positives)
+  - Use: if 'venv' in root or 'node_modules' in root: continue
+- Context: VPS health check is production-focused
+  - Service monitoring: systemctl, journalctl, uptime
+  - Resource monitoring: CPU, memory, disk, log file size
+  - Security: file permissions, credential exposure, SSH keys
+  - Log management: rotation, retention, disk usage
+  - Deployment: deploy.sh safety, idempotency, backups
+  - Monitoring: alerts, dashboards, Prometheus/Grafana
+- Context: Dev environment returns CRITICAL grade (expected)
+  - Service not running (local development)
+  - VPS metrics unavailable
+  - Report still generates useful recommendations
+
+**Implementation Notes:**
+- Created comprehensive VPS health checker
+- Implements 6 audit areas:
+  1. Service monitoring (systemd status, uptime, restarts, crashes)
+  2. Resource utilization (CPU, memory, disk, log size)
+  3. Security audit (file permissions, credential exposure, SSH keys)
+  4. Log management (size, rotation, retention)
+  5. Deployment process (deploy.sh review)
+  6. Monitoring & alerts (dashboards, alerting systems)
+- ServiceStatus dataclass tracks:
+  - is_running, uptime_seconds, restart_count, last_restart, crash_logs
+- ResourceUsage dataclass tracks:
+  - cpu_percent, memory_mb, memory_percent, disk_usage_gb, disk_percent, log_size_mb
+- SecurityIssue dataclass tracks:
+  - severity, category, description, recommendation
+- HealthCheck dataclass aggregates all results
+- Security checks:
+  - .env file permissions (should be chmod 600)
+  - state/ directory permissions (should be chmod 700)
+  - SSH key permissions (should be chmod 600)
+  - Credential exposure in logs (grep for patterns)
+- Log management checks:
+  - Current log file size
+  - Logrotate configuration presence
+  - Rotated log files count
+- Deployment safety checks:
+  - Contains git pull (code updates)
+  - Contains service restart (apply changes)
+  - Contains pip install (dependency updates)
+  - Dangerous commands detection (rm -rf, etc.)
+  - Error handling (set -e)
+  - Backup steps
+- Monitoring assessment:
+  - Dashboard files presence
+  - Alerting code detection (telegram, email, webhook)
+  - Prometheus/Grafana configuration
+- Overall grade calculation:
+  - CRITICAL: Security issues OR service down
+  - NEEDS_IMPROVEMENT: High security OR log issues OR deploy issues
+  - ACCEPTABLE: Resource issues OR no monitoring
+  - GOOD: Minor security issues only
+  - EXCELLENT: No issues detected
+- Report structure:
+  1. Executive summary with grade
+  2. Service monitoring (uptime, restarts, crashes)
+  3. Resource utilization table
+  4. Security audit (grouped by severity)
+  5. Log management status
+  6. Deployment process status
+  7. Monitoring & alerts status
+  8. Recommendations (critical, important, optimization)
+  9. Appendix: VPS access commands
+- Handles edge cases: VPS not accessible, missing files, permission errors
+- Exit code: 0 if EXCELLENT/GOOD/ACCEPTABLE, 1 if NEEDS_IMPROVEMENT/CRITICAL
+- Typecheck passed with py_compile
+- Successfully generated report in dev environment (CRITICAL grade expected)
+- Provides actionable VPS commands for production checks
+
+---
+
