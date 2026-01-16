@@ -131,3 +131,40 @@
   - Test coverage: 5 scenarios (no orderbook, no contrarian, no extreme prices, contrarian Down, contrarian Up)
   - All 5 tests passed, typecheck passed
 ---
+## Iteration 8 - US-BF-003: Remove RegimeAgent default-to-Up bias
+- Changed agents/regime_agent.py lines 115-147 to return Skip vote in sideways regime
+- Previous behavior: Defaulted to "Up" when in sideways regime (line 127-128)
+- New behavior: Returns Skip vote with confidence=0.0, quality=0.0 when sideways regime detected
+- Key change: Check regime FIRST (line 117), then only pick direction for non-sideways regimes
+- Files changed:
+  - agents/regime_agent.py (lines 115-147: added early Skip return for sideways regime)
+  - test_regime_agent_skip.py (created comprehensive test suite with 5 test cases)
+  - PRD.md (marked US-BF-003 complete)
+- Learnings for future iterations:
+  - RegimeAgent detects overall market regime (bull_momentum, bear_momentum, volatile, sideways)
+  - Sideways regime requires <75% cryptos agreeing on direction (STRONG_TREND_RATIO = 0.75)
+  - RegimeAgent uses TREND_THRESHOLD = 0.001 (0.1%) to classify individual crypto trends
+  - Skip vote strategy: Check regime FIRST, return Skip for sideways, then pick direction for others
+  - Test data must pass correct "current prices" (ending prices), not base prices
+  - _update_price_history() appends data['prices'] to history → test data needs ending prices
+  - All 5 test cases passed: sideways Skip, bull Up, bear Down, volatile detection, choppy Skip
+  - Syntax check passed for regime_agent.py
+---
+## Iteration 9 - US-BF-004: Fix RSI neutral zone scoring
+- Changed agents/tech_agent.py lines 96-97, 105-106 to return 0.5 instead of 1.0 for RSI 40-60
+- Updated reasoning message to "RSI {rsi} neutral → low confidence" (was "RSI {rsi} neutral")
+- Fixed boundary conditions: Used >= 40 and <= 60 to properly include RSI=40 and RSI=60
+- Files changed:
+  - agents/tech_agent.py (lines 91-108: changed confidence from 1.0 to 0.5 for neutral zone)
+  - test_rsi_neutral.py (created comprehensive test suite with 5 test cases)
+  - PRD.md (marked US-BF-004 complete)
+- Learnings for future iterations:
+  - RSI neutral zone (40-60) should indicate LOW confidence, not high confidence
+  - Previous behavior returned 1.0 confidence for neutral RSI → false signals in sideways markets
+  - New behavior returns 0.5 confidence for neutral RSI → prevents false high confidence
+  - Boundary conditions matter: Must use >= 40 and <= 60 to include edges (not > 40 and < 60)
+  - If RSI=40 with > 40 check, falls through to else clause → wrong confidence value
+  - Test coverage: 5 scenarios (neutral zone 50, bearish 65, bullish 35, boundaries 40/60, extremes 25/75)
+  - All 5 tests passed, syntax check passed
+  - RSI scoring now consistent: neutral=0.5, mild signals=0.5, strong signals=0.8, opposing extremes=0.0
+---
