@@ -550,24 +550,24 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Before we optimize, let's see what we can DELETE. Every component should justify its existence with data."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/component_audit.py`
-- [ ] List all system components:
+- [x] Create `scripts/research/component_audit.py`
+- [x] List all system components:
   - Agents (11 total: Tech, Sentiment, Regime, Risk, ML, etc.)
   - Features (RSI, confluence, regime detection, trend filters, etc.)
   - Config parameters (50+ thresholds and toggles)
-- [ ] For each component, calculate:
+- [x] For each component, calculate:
   - Lines of code (maintenance burden)
   - Execution time (performance cost)
   - Win rate contribution (if disabled, does WR improve/degrade?)
   - Decision frequency (how often does it actually influence trades?)
-- [ ] Identify candidates for removal:
+- [x] Identify candidates for removal:
   - Negative ROI: Component hurts performance
   - Zero impact: Component doesn't change decisions
   - Redundant: Two components doing same thing
-- [ ] Generate `reports/alex_rousseau/elimination_candidates.md`
-- [ ] Report: Ranked list of components to remove, expected impact
-- [ ] Test: Script analyzes ≥20 components
-- [ ] Typecheck passes
+- [x] Generate `reports/alex_rousseau/elimination_candidates.md`
+- [x] Report: Ranked list of components to remove, expected impact
+- [x] Test: Script analyzes ≥20 components (26 analyzed)
+- [x] Typecheck passes
 
 #### US-RC-031C: Assumption archaeology
 **Persona Context:** "Why do we have 11 agents? Why consensus voting? Who decided this? Let's question every assumption."
