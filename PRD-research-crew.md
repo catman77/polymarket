@@ -164,14 +164,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If the bot crashes mid-write to trading_state.json, we corrupt the state. I need to verify atomic writes are implemented."
 
 **Acceptance Criteria:**
-- [ ] Review code: `bot/momentum_bot_v12.py` → save_state() function
-- [ ] Check: Does it use tmp file + rename pattern? (atomic on POSIX)
-- [ ] Pattern should be: write to `.tmp`, then `os.rename()` to actual file
-- [ ] If not atomic, document the bug in `reports/dmitri_volkov/state_audit.md`
-- [ ] Generate: Code snippet showing proper atomic write pattern
-- [ ] Test: Create test that simulates crash during state save
-- [ ] Report: Atomic write implemented (yes/no), risk level, fix recommendation
-- [ ] Typecheck passes
+- [x] Review code: `bot/momentum_bot_v12.py` → save_state() function
+- [x] Check: Does it use tmp file + rename pattern? (atomic on POSIX)
+- [x] Pattern should be: write to `.tmp`, then `os.rename()` to actual file
+- [x] If not atomic, document the bug in `reports/dmitri_volkov/state_audit.md`
+- [x] Generate: Code snippet showing proper atomic write pattern
+- [x] Test: Create test that simulates crash during state save
+- [x] Report: Atomic write implemented (yes/no), risk level, fix recommendation
+- [x] Typecheck passes
 
 #### US-RC-007: Reproduce Jan 16 peak_balance desync
 **Persona Context:** "The $186 error is a smoking gun. I need to understand exactly how peak_balance got corrupted."
