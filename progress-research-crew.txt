@@ -158,3 +158,72 @@
 
 ---
 
+## Iteration 4 - Task 7.4: Statistical Anomaly Detection
+**Persona:** Dr. Kenji Nakamoto (Data Forensics Specialist)
+**Completed:** 2026-01-16 09:51
+**Files Changed:**
+- scripts/research/statistical_anomaly_detection.py (created)
+- reports/kenji_nakamoto/statistical_anomaly_report.md (generated)
+
+**Learnings:**
+- Pattern: Log parsing requires multiple regex patterns (ORDER PLACED vs WIN/LOSS)
+  - ORDER format: timestamp + crypto + direction + entry price
+  - OUTCOME format: timestamp + WIN/LOSS + crypto + direction + P&L
+  - Must fuzzy match by time window (20 min) + crypto + direction
+- Pattern: Rolling window analysis for time-series data
+  - Window size of 20 trades balances sensitivity vs noise
+  - Calculate metric for each window position
+  - Detect sudden jumps (>30%) or suspicious stability (variance < 0.001)
+- Pattern: Runs test for independence in binary outcomes
+  - Count "runs" (sequences of same outcome: WWW or LLL)
+  - Expected runs = (2 * wins * losses) / n + 1
+  - Too few runs = clustering (not independent)
+  - Too many runs = alternating pattern (also suspicious)
+- Gotcha: Empty lists break statistics calculations
+  - Always check len(list) before calculating mean/variance
+  - Return empty results early if insufficient data
+- Gotcha: Division by zero in runs test
+  - Use conditional: expected_runs > 0 before comparisons
+- Context: Statistical anomaly severity levels:
+  - 🔴 HIGH: Critical issues (impossible prices, inverse strategies winning, 100%/0% win rates)
+  - 🟡 MODERATE: Suspicious patterns (outliers >3σ, unusual clustering)
+  - 🟢 LOW: Expected patterns (consistent decimal precision)
+- Context: Binary option prices must be $0.01-$0.99
+  - Outside this range = impossible (data corruption)
+  - All identical prices = suspicious uniformity
+- Context: Outlier detection using 3-sigma rule
+  - Calculate mean and std dev of P&L
+  - Outliers = |pnl - mean| > 3 * std_dev
+  - Normal distribution: 99.7% within 3σ, so outliers are rare
+- Context: Temporal bias detection (hour of day)
+  - Perfect win rate (100%) in any hour = suspicious
+  - Zero win rate (0%) in any hour = suspicious
+  - Expected: Roughly consistent across hours
+
+**Implementation Notes:**
+- Created comprehensive statistical anomaly detection tool
+- Parses bot.log for ORDER PLACED and WIN/LOSS entries
+- Fuzzy matches outcomes to orders (20 min window)
+- Implements 7 anomaly detection tests:
+  1. Rolling win rate clustering (20-trade window)
+  2. Outcome distribution (runs test for independence)
+  3. Entry price validation (range $0.01-$0.99, uniformity check)
+  4. Temporal patterns (win rate by hour, perfect/zero rates)
+  5. Crypto-specific analysis (win rate disparity >40%)
+  6. Shadow strategy sanity checks (baseline vs default, inverse strategies)
+  7. Outlier detection (P&L >3 standard deviations)
+- Generates detailed markdown report with:
+  - Executive summary with verdict (CRITICAL/WARNING/CLEAN)
+  - Anomaly categories grouped by type
+  - Detailed analysis (win rate stats, crypto breakdown, entry price distribution)
+  - Statistical tests performed (descriptions)
+  - Actionable recommendations based on severity
+  - Data volume warning if <100 trades
+  - Full appendix of all detected anomalies
+- Handles edge cases: missing log file, zero trades, empty database
+- Provides meaningful output even with no data
+- Typecheck passed with py_compile
+- Successfully generates report with no input data
+
+---
+
