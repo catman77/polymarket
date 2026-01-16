@@ -1,0 +1,17 @@
+[Unit]
+Description=Polymarket Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/polymarket-autotrader
+Environment="PATH=/opt/polymarket-autotrader/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/opt/polymarket-autotrader/venv/bin/python3 /opt/polymarket-autotrader/telegram_bot/telegram_notifier.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/polymarket-autotrader/logs/telegram_bot.log
+StandardError=append:/opt/polymarket-autotrader/logs/telegram_bot.log
+
+[Install]
+WantedBy=multi-user.target
