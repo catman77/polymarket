@@ -217,14 +217,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If the bot is restarting frequently, there's an underlying stability issue I need to find."
 
 **Acceptance Criteria:**
-- [ ] SSH to VPS: `ssh root@216.238.85.11`
-- [ ] Run: `systemctl status polymarket-bot` (capture uptime)
-- [ ] Run: `journalctl -u polymarket-bot --since "2026-01-01"` (count restarts)
-- [ ] Identify: Crash logs, OOM kills, manual restarts
-- [ ] Generate `reports/dmitri_volkov/vps_health_report.md`
-- [ ] Report: Total uptime %, restart count, crash reasons, resource usage
-- [ ] Test: Report shows uptime data for Jan 2026
-- [ ] Document: Save output locally (no typecheck needed for report)
+- [x] SSH to VPS: `ssh root@216.238.85.11`
+- [x] Run: `systemctl status polymarket-bot` (capture uptime)
+- [x] Run: `journalctl -u polymarket-bot --since "2026-01-01"` (count restarts)
+- [x] Identify: Crash logs, OOM kills, manual restarts
+- [x] Generate `reports/dmitri_volkov/vps_health_report.md`
+- [x] Report: Total uptime %, restart count, crash reasons, resource usage
+- [x] Test: Report shows uptime data for Jan 2026
+- [x] Document: Save output locally (no typecheck needed for report)
 
 ---
 
