@@ -303,3 +303,83 @@
 
 ---
 
+## Iteration 6 - Task 6.2: API Reliability & Circuit Breakers
+**Persona:** Dmitri "The Hammer" Volkov (System Reliability Engineer)
+**Completed:** $(date +"%Y-%m-%d %H:%M")
+**Files Changed:**
+- scripts/research/api_reliability_audit.py (created)
+- reports/dmitri_volkov/api_reliability_audit.md (generated)
+
+**Learnings:**
+- Pattern: API dependency mapping requires searching codebase for URL patterns
+  - Use subprocess.run(['grep', '-r', 'url_pattern', code_path])
+  - Wrap in try/except with timeout to handle missing directories
+- Pattern: Timeout detection via regex patterns
+  - Search for 'requests.(get|post|put|delete)' with 'timeout=' parameter
+  - Multiple libraries: requests, aiohttp, urllib (check all)
+  - Extract timeout value from regex capture groups
+- Pattern: Circuit breaker detection via code pattern matching
+  - Look for: consecutive fail counters, error_count variables, backoff logic
+  - Both explicit ("circuit_breaker") and implicit (failure count tracking) patterns
+  - Extract 3-line code context for snippet in report
+- Pattern: API failure log parsing
+  - Multiple failure keywords: timeout, connection error, api error, etc.
+  - Match API name by URL pattern or service name in logs
+  - Check for recovery indicators: retry, recovered, success
+- Gotcha: subprocess.run needs timeout parameter to prevent hanging
+  - Always use timeout=10 for file system operations
+  - Catch both TimeoutExpired and FileNotFoundError exceptions
+- Gotcha: Empty result sets need defensive checks
+  - Check if API list is empty before calculating percentages
+  - Use max(1, total_apis) to prevent division by zero
+  - Provide meaningful "UNKNOWN" status when no data available
+- Context: Comprehensive API mapping includes:
+  - Polymarket APIs: Gamma (markets), CLOB (orders), Data (positions)
+  - Exchange APIs: Binance, Kraken, Coinbase (price feeds)
+  - Blockchain: Polygon RPC (balance checks, redemptions)
+- Context: Timeout recommendations based on API criticality:
+  - Price feeds: 5-10s (fast responses expected)
+  - Order placement: 10-15s (critical path)
+  - Blockchain RPC: 15-30s (can be slow)
+- Context: Circuit breaker pattern is critical for resilience
+  - After N failures, stop calling API for cooldown period
+  - Prevents cascade failures and resource exhaustion
+  - Standard implementation: failure counter + exponential backoff
+- Context: Report severity scoring:
+  - EXCELLENT: All APIs have timeouts + error handling
+  - GOOD: 80%+ have timeouts (needs minor improvements)
+  - POOR: <80% have timeouts (critical gaps)
+  - UNKNOWN: No API usage detected (dev environment)
+
+**Implementation Notes:**
+- Created comprehensive API reliability auditor
+- Implements 4 audit phases:
+  1. Map API dependencies (7 external services)
+  2. Audit timeout configuration (regex search for timeout params)
+  3. Detect circuit breaker patterns (5 pattern types)
+  4. Parse historical API failures (log analysis)
+- APIEndpoint dataclass tracks:
+  - name, url_pattern, purpose, found_in_code
+  - timeout_configured, timeout_value, retry_logic
+  - error_handling, fallback_present
+- APIFailure dataclass tracks historical events:
+  - timestamp, api_name, error_type, recovered, context
+- CircuitBreakerPattern dataclass tracks detected patterns:
+  - file_path, pattern_type (explicit/implicit), code_snippet, assessment
+- Report structure:
+  1. Executive summary with score
+  2. API dependency map (7 services)
+  3. Timeout configuration audit
+  4. Circuit breaker analysis
+  5. Historical failure analysis
+  6. Failure mode testing recommendations
+  7. Resilience recommendations (prioritized)
+  8. Implementation priority timeline
+- Handles edge cases: missing code, missing logs, no API usage
+- Generates actionable recommendations based on findings
+- Exit code: 0 if EXCELLENT/GOOD/UNKNOWN, 1 if POOR
+- Typecheck passed with py_compile
+- Successfully audited bot code: EXCELLENT score (all APIs have timeouts + error handling)
+
+---
+
