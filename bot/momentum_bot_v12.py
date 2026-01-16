@@ -134,6 +134,68 @@ def log_ml_trade_direct(db_path: str, strategy: str, crypto: str, epoch: str,
         log.error(f"Failed to log ML trade: {e}")
         return False
 
+
+def log_ml_outcome_direct(crypto: str, epoch: str, predicted_direction: str,
+                          actual_direction: str, entry_price: float, size: float,
+                          shares: int, pnl: float) -> bool:
+    """
+    Log outcome for an ML trade directly to database.
+    Fixes Bug #3: Missing outcome logging for ML trades.
+
+    Args:
+        crypto: Crypto symbol (btc, eth, sol, xrp)
+        epoch: Epoch timestamp
+        predicted_direction: What we predicted (Up or Down)
+        actual_direction: What actually happened (Up or Down)
+        entry_price: Entry price of the trade
+        size: Position size in USD
+        shares: Number of shares
+        pnl: Profit/loss in USD
+    """
+    try:
+        # Get DB path (same as in main())
+        from pathlib import Path
+        db_path = str(Path(__file__).parent.parent / "simulation" / "trade_journal.db")
+
+        conn = sqlite3.connect(db_path)
+        timestamp = time.time()
+
+        # Find the trade_id by matching crypto, epoch
+        cursor = conn.execute('''
+            SELECT id FROM trades
+            WHERE crypto = ? AND epoch = ? AND strategy LIKE 'ml_live%'
+            ORDER BY id DESC LIMIT 1
+        ''', (crypto, epoch))
+        result = cursor.fetchone()
+
+        if result:
+            trade_id = result[0]
+
+            # Insert outcome
+            conn.execute('''
+                INSERT INTO outcomes (trade_id, crypto, epoch, predicted_direction,
+                                     actual_direction, pnl, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (trade_id, crypto, epoch, predicted_direction, actual_direction,
+                  pnl, timestamp))
+
+            conn.commit()
+            conn.close()
+            return True
+        else:
+            import logging
+            log = logging.getLogger(__name__)
+            log.warning(f"Could not find trade for outcome: {crypto} {epoch}")
+            conn.close()
+            return False
+
+    except Exception as e:
+        import logging
+        log = logging.getLogger(__name__)
+        log.error(f"Failed to log ML outcome: {e}")
+        return False
+
+
 # ML Bot imports (for live ML trading)
 ML_BOT_AVAILABLE = False
 try:
@@ -1791,6 +1853,80 @@ def save_state(state: TradingState):
         json.dump(asdict(state), f, indent=2)
 
 
+def validate_and_fix_state(state: TradingState, actual_balance: float) -> TradingState:
+    """
+    Validate state file against blockchain reality and fix discrepancies.
+
+    This prevents the Jan 15, 2026 incident where state file showed $14.91
+    but actual balance was $200.97, causing drawdown protection to fail.
+    """
+    DESYNC_THRESHOLD = 0.02  # 2% tolerance
+    CRITICAL_THRESHOLD = 0.10  # 10% requires alert
+
+    # Calculate discrepancy
+    if state.current_balance == 0:
+        discrepancy_pct = 1.0  # 100% if state shows zero
+    else:
+        discrepancy_pct = abs(actual_balance - state.current_balance) / state.current_balance
+
+    # Check for desync
+    if discrepancy_pct > DESYNC_THRESHOLD:
+        log.warning("=" * 80)
+        log.warning("⚠️  STATE FILE DESYNC DETECTED")
+        log.warning("=" * 80)
+        log.warning(f"State file balance: ${state.current_balance:.2f}")
+        log.warning(f"Actual blockchain balance: ${actual_balance:.2f}")
+        log.warning(f"Discrepancy: ${abs(actual_balance - state.current_balance):.2f} ({discrepancy_pct*100:.1f}%)")
+
+        # Critical desync (>10%)
+        if discrepancy_pct > CRITICAL_THRESHOLD:
+            log.error("🔴 CRITICAL DESYNC >10% - AUTO-CORRECTING STATE FILE")
+
+            # Correct the balance
+            old_balance = state.current_balance
+            state.current_balance = actual_balance
+
+            # Check if drawdown protection should trigger
+            if state.peak_balance > 0:
+                drawdown = (state.peak_balance - actual_balance) / state.peak_balance
+                log.warning(f"Recalculated drawdown: {drawdown*100:.1f}% (peak ${state.peak_balance:.2f})")
+
+                if drawdown > MAX_DRAWDOWN_PCT:
+                    log.error("=" * 80)
+                    log.error("🛑 DRAWDOWN LIMIT EXCEEDED AFTER STATE CORRECTION")
+                    log.error("=" * 80)
+                    log.error(f"Peak: ${state.peak_balance:.2f}")
+                    log.error(f"Current: ${actual_balance:.2f}")
+                    log.error(f"Drawdown: {drawdown*100:.1f}% (limit: {MAX_DRAWDOWN_PCT*100:.0f}%)")
+                    log.error("Creating kill switch file...")
+
+                    # Create kill switch
+                    with open(KILL_SWITCH_FILE, 'w') as f:
+                        f.write(f"HALT: Drawdown {drawdown*100:.1f}% exceeds {MAX_DRAWDOWN_PCT*100:.0f}% after state correction\n")
+                        f.write(f"Peak: ${state.peak_balance:.2f}\n")
+                        f.write(f"Current: ${actual_balance:.2f}\n")
+                        f.write(f"State file was desynced by ${abs(actual_balance - old_balance):.2f}\n")
+
+                    state.mode = 'halted'
+                    state.halt_reason = f"Drawdown {drawdown*100:.1f}% exceeds limit after state correction"
+
+            # Save corrected state
+            save_state(state)
+            log.warning(f"✅ State file corrected: ${old_balance:.2f} → ${actual_balance:.2f}")
+
+        else:
+            # Minor desync (2-10%) - just warn
+            log.warning("⚠️  Minor desync detected but within tolerance")
+            log.warning("Auto-correcting balance...")
+            state.current_balance = actual_balance
+            save_state(state)
+
+    else:
+        log.info(f"✅ State validation passed (discrepancy: {discrepancy_pct*100:.2f}%)")
+
+    return state
+
+
 def get_usdc_balance() -> float:
     try:
         resp = requests.post(RPC_URL, json={
@@ -1835,6 +1971,11 @@ def run_bot():
 
     # Initialize balance tracking
     balance = get_usdc_balance()
+
+    # CRITICAL: Validate state against blockchain (prevents Jan 15, 2026 incident)
+    state = validate_and_fix_state(state, balance)
+
+    # Update current balance (may have been corrected by validation)
     state.current_balance = balance
 
     # Reset daily tracking at start or new day
@@ -1843,12 +1984,10 @@ def run_bot():
         state.day_start_balance = balance
         state.daily_pnl = 0
         state.daily_loss_count = 0
-        # v12 FIX: Reset peak_balance on new day to prevent false drawdown halts
-        state.peak_balance = balance
-        log.info(f"New day detected - reset peak_balance to ${balance:.2f}")
-    else:
-        # Only update peak during the day
-        state.peak_balance = max(state.peak_balance, balance)
+        log.info(f"New day detected - reset daily tracking")
+
+    # ALWAYS track peak across all days (never reset)
+    state.peak_balance = max(state.peak_balance, balance)
 
     log.info(f"Balance: ${balance:.2f}")
     log.info(f"Mode: {state.mode}")
@@ -2024,6 +2163,33 @@ def run_bot():
             if redeemed > 0:
                 balance = get_usdc_balance()
                 state.current_balance = balance
+
+                # LOG OUTCOMES FOR LIVE ML TRADES (Bug #3 fix)
+                # This prevents the Jan 15, 2026 incident where 28 trades had no outcomes recorded
+                if resolved_positions:
+                    for resolved in resolved_positions:
+                        crypto = resolved['crypto']
+
+                        # Find matching position in our tracked positions
+                        matching_pos = None
+                        for pos in guardian.open_positions:
+                            if pos.crypto == crypto:
+                                matching_pos = pos
+                                break
+
+                        if matching_pos:
+                            # Log the WIN outcome to database
+                            log_ml_outcome_direct(
+                                crypto=matching_pos.crypto,
+                                epoch=matching_pos.epoch,
+                                predicted_direction=matching_pos.direction,
+                                actual_direction=matching_pos.direction,  # Won = actual matches predicted
+                                entry_price=matching_pos.entry_price,
+                                size=matching_pos.cost,
+                                shares=matching_pos.shares,
+                                pnl=matching_pos.shares - matching_pos.cost  # $1.00 per share - cost
+                            )
+                            log.info(f"✅ Logged WIN outcome: {crypto} {matching_pos.direction} @ {matching_pos.epoch}")
 
                 # SHADOW TRADING: Resolve outcomes for shadow strategies
                 if orchestrator and resolved_positions:
