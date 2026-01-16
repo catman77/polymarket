@@ -324,9 +324,12 @@ CONSERVATIVE_BET_MULTIPLIER = 0.80 # 80% of normal (was 50%)
 # =============================================================================
 # OTHER RISK MANAGEMENT
 # =============================================================================
-DAILY_LOSS_LIMIT_USD = 30          # Reduced from $100 - hard stop
-DAILY_LOSS_LIMIT_PCT = 0.20        # 20% daily loss = halt
-MAX_DRAWDOWN_PCT = 0.30            # Kill switch at 30% drawdown
+# DEPRECATED: These constants moved to config/agent_config.py for dynamic updates
+# Import from config instead of hardcoding here
+from config import agent_config
+DAILY_LOSS_LIMIT_USD = agent_config.RISK_DAILY_LOSS_LIMIT_USD
+DAILY_LOSS_LIMIT_PCT = agent_config.RISK_DAILY_LOSS_LIMIT_PCT
+MAX_DRAWDOWN_PCT = agent_config.RISK_MAX_DRAWDOWN
 KILL_SWITCH_FILE = "./HALT"
 
 # Signal Thresholds - FURTHER STRENGTHENED in v12
