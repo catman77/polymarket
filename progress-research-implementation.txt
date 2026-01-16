@@ -244,3 +244,108 @@ Format:
 
 ---
 
+
+## Iteration 6 - US-RI-006: Optimize Entry Timing Windows
+**Priority:** MEDIUM
+**Completed:** 2026-01-16 13:00 UTC
+**Files Changed:**
+- config/agent_config.py
+- bot/momentum_bot_v12.py
+- PRD-research-implementation.md
+
+**What was implemented:**
+- Added timing optimization configuration parameters to agent_config.py:
+  - TIMING_OPTIMIZATION_ENABLED = True (master enable/disable)
+  - EARLY_WINDOW_END = 300s (0-300s window gets penalty)
+  - LATE_WINDOW_START = 600s (600-900s window gets bonus)
+  - LATE_TIMING_BONUS = 0.05 (+5% confidence for late trades)
+  - EARLY_TIMING_PENALTY = 0.03 (-3% confidence for early trades)
+- Implemented calculate_timing_bonus() function in momentum_bot_v12.py:
+  - Takes time_in_epoch as input
+  - Returns adjustment value (-0.03, 0.00, or +0.05)
+  - Uses config parameters with fallback defaults
+  - Comprehensive docstring with examples
+- Applied timing bonus in two locations:
+  1. ML mode (line 2589-2593): After ML decision, before trading
+  2. Agent mode (line 2751-2756): After agent decision, before trading
+- Confidence scores clamped to [0, 1] after adjustment
+- Enhanced logging to show:
+  - Original confidence, adjusted confidence, timing adjustment
+  - Timing window label (EARLY/MID/LATE)
+  - Seconds into epoch
+
+**Technical Details:**
+- Timing bonus applied to both confidence and weighted_score
+- Adjustment is additive (not multiplicative) for clarity
+- Edge cases tested: 0s, 300s, 600s, 900s all work correctly
+- Config imports with getattr() for graceful degradation
+- Function works in both ML mode (USE_ML_BOT=true) and agent mode
+
+**Learnings for future iterations:**
+- Research report (timing_window_analysis.md) had insufficient data (0 trades)
+- Used DEPLOYMENT_ROADMAP.md findings instead: Early 54% WR, Late 62% WR
+- Timing adjustment should be applied AFTER decision but BEFORE position sizing
+- Both confidence and weighted_score need adjustment (used for different purposes)
+- Logging format: {confidence:.1%} (original: {original:.1%}, timing: {adj:+.1%})
+- Config has TIMING_OPTIMIZATION_ENABLED flag for easy disable if needed
+- Function uses getattr() for config values to handle missing attributes gracefully
+
+**Expected Impact:**
+- Late trades should increase from ~40% to ≥60% of total trades
+- Late trades maintain or improve 62% WR (don't dilute quality)
+- Overall WR should improve 1-2% through timing-aware confidence scoring
+- Trade timing distribution should shift toward higher-performing late window
+
+**Testing Status:**
+- ✅ Syntax check: Passed (py_compile successful)
+- ✅ Config loads: Timing parameters verified
+- ✅ Function test: All timing windows return correct adjustments
+- ✅ Edge cases: 0s, 300s, 600s, 900s all correct
+- ⏳ Production validation: Requires 24-48 hour monitoring
+
+---
+
+
+## Iteration 7 - US-RI-007: Lower Entry Price Threshold
+**Priority:** MEDIUM
+**Completed:** 2026-01-16 13:30 UTC
+**Files Changed:**
+- config/agent_config.py
+- PRD-research-implementation.md
+
+**What was implemented:**
+- Lowered MAX_ENTRY from 0.25 to 0.20 (global cap for all strategies)
+- Lowered EARLY_MAX_ENTRY from 0.30 to 0.20 (early momentum max)
+- Lowered SENTIMENT_CONTRARIAN_MAX_ENTRY from 0.20 to 0.15 (contrarian entries)
+- Added LATE_MAX_ENTRY = 0.25 (new config value to override bot's 0.95 default)
+- Updated comments to reference US-RI-007 and research findings
+
+**Technical Details:**
+- Research shows <$0.15 entries have 68% WR, >$0.25 entries have 52% WR
+- Lower entry prices = lower fees = lower breakeven win rate requirement
+- Current avg entry ~$0.24, target <$0.20 with new thresholds
+- Four entry price constants updated across different strategies
+- Config loads successfully, bot imports without syntax errors
+
+**Learnings for future iterations:**
+- Entry price limits exist in both config/agent_config.py and bot/momentum_bot_v12.py
+- Config values can override bot defaults (bot checks config via getattr)
+- Research CSV file (entry_vs_outcome.csv) had no data, used DEPLOYMENT_ROADMAP.md instead
+- Multiple entry constants for different strategies: MAX_ENTRY (global), EARLY_MAX_ENTRY, LATE_MAX_ENTRY, SENTIMENT_CONTRARIAN_MAX_ENTRY
+- LATE_MAX_ENTRY in bot code (0.95) is for high-probability late confirmation trades (different strategy)
+- Config values take precedence when bot code checks them with getattr()
+
+**Expected Impact:**
+- Average entry price: Drop from ~$0.24 to <$0.20 (cheaper entries)
+- Cheap entries (<$0.15): Should increase to ≥40% of trades
+- Win rate: Should improve 2-3% (cheaper entries historically perform better)
+- Trade frequency: May drop slightly (more restrictive thresholds filter out expensive entries)
+
+**Testing Status:**
+- ✅ Config loads: All entry price values verified correct
+- ✅ Bot imports: No syntax errors
+- ✅ Values confirmed: MAX_ENTRY=0.20, EARLY_MAX_ENTRY=0.20, LATE_MAX_ENTRY=0.25, CONTRARIAN=0.15
+- ⏳ Production validation: Requires 24-48 hour monitoring
+
+---
+
