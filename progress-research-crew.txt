@@ -956,3 +956,64 @@
 
 ---
 
+
+## Iteration 15 - US-RC-007: Reproduce Jan 16 peak_balance desync
+**Persona:** Dmitri "The Hammer" Volkov (System Reliability Engineer)
+**Completed:** 2026-01-16 12:54
+**Files Changed:**
+- scripts/research/jan16_desync_root_cause.py (created)
+- reports/dmitri_volkov/jan16_desync_root_cause.md (generated)
+- PRD-research-crew.md (marked US-RC-007 complete)
+- bot.log (fetched from VPS)
+
+**Learnings:**
+- Pattern: Desync reproduced successfully - peak_balance was $290.53 instead of $300.00
+  - Discrepancy: $9.47 (not $186 as mentioned in CLAUDE.md context)
+  - Root cause: peak_balance updated from unredeemed position values before Jan 16
+  - When positions redeemed, cash increased but peak stayed at inflated value
+- Pattern: Analyzed 679 HALT events from Jan 16 01:05-15:40 UTC
+  - First event: peak=$290.53, current=$198.46 (31.7% drawdown)
+  - Balance jumped to $200.97 at 01:20 UTC (likely redemption)
+  - Peak remained constant at $290.53 throughout (confirms desync)
+- Pattern: Log parsing with SSH to VPS works well
+  - Used `grep -E 'HALTED.*2026-01-16' /opt/polymarket-autotrader/bot.log`
+  - Fetched logs to local file for analysis
+  - Regex pattern: `HALTED.*peak \$([0-9.]+) -> \$([0-9.]+) \[\$([0-9.]+) cash \+ \$([0-9.]+) redeemable\]`
+- Gotcha: F-string formatting with conditional expressions needs separate variable
+  - Bad: `f"${value:.2f if value else 'N/A'}"`  # Invalid format specifier
+  - Good: `val = f"${value:.2f}" if value else "N/A"; f"{val}"`
+- Gotcha: Dictionary must include all keys even when no data
+  - Return dict must have consistent schema (expected_peak, desync_amount, total_events)
+- Context: Report structure includes:
+  - Executive summary (desync detected, expected vs observed, discrepancy)
+  - Timeline analysis (first/last events, event breakdown table)
+  - Root cause hypothesis (mechanism, evidence, inference)
+  - Code analysis (current implementation, issue identification)
+  - Proposed fixes (Solution 1: cash-only peak, Solution 2: separate peaks)
+  - Testing strategy (desync reproduction, peak reset tests)
+  - Recommendations (immediate/short-term/long-term actions)
+  - VPS commands for manual fix
+
+**Implementation Notes:**
+- Created comprehensive desync analyzer with BalanceEvent dataclass
+- Parses HALT messages from bot.log (Jan 16 data)
+- Extracts: timestamp, peak_balance, current_balance, cash_only, redeemable
+- Identifies unique peak values across all events
+- Compares observed peak ($290.53) to expected peak ($300.00)
+- Generates detailed markdown report with:
+  - 679 events analyzed
+  - Event breakdown table (first 50 events shown)
+  - Root cause hypothesis with mechanism explanation
+  - Code fix proposals (cash-only peak tracking or separate peaks)
+  - Testing scenarios (desync reproduction, peak reset)
+  - Immediate/short-term/long-term recommendations
+  - VPS commands for manual peak reset
+- Exit code: 1 (desync confirmed - expected behavior per acceptance criteria)
+- Typecheck passed with py_compile
+- Successfully reproduced Jan 16 desync issue
+
+**Key Finding:**
+🔴 CRITICAL: Peak balance desync confirmed at $290.53 (should be $300.00). Root cause: Unredeemed position values inflated peak before Jan 16. After redemption, cash increased but peak remained at inflated value, causing false 31.7% drawdown and premature bot halt. Fix recommended: Track peak using cash-only balance (exclude unredeemed positions).
+
+---
+

@@ -177,14 +177,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "The $186 error is a smoking gun. I need to understand exactly how peak_balance got corrupted."
 
 **Acceptance Criteria:**
-- [ ] Review `state/trading_state.json` history in git: `git log --all state/`
-- [ ] Parse `bot.log` around Jan 16 01:56 UTC for peak_balance updates
-- [ ] Identify: When did peak_balance become $386.97 instead of $200.97?
-- [ ] Hypothesis: Were unredeemed position values added to peak?
-- [ ] Generate `reports/dmitri_volkov/jan16_desync_root_cause.md`
-- [ ] Report: Timeline of peak_balance changes, root cause, code fix needed
-- [ ] Test: Proposed fix prevents desync in test scenario
-- [ ] Typecheck passes
+- [x] Review `state/trading_state.json` history in git: `git log --all state/`
+- [x] Parse `bot.log` around Jan 16 01:56 UTC for peak_balance updates
+- [x] Identify: When did peak_balance become $386.97 instead of $200.97?
+- [x] Hypothesis: Were unredeemed position values added to peak?
+- [x] Generate `reports/dmitri_volkov/jan16_desync_root_cause.md`
+- [x] Report: Timeline of peak_balance changes, root cause, code fix needed
+- [x] Test: Proposed fix prevents desync in test scenario
+- [x] Typecheck passes
 
 #### US-RC-008: Test state recovery from corruption
 **Persona Context:** "What happens if trading_state.json is deleted or contains invalid JSON? Does the bot crash or recover gracefully?"
