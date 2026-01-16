@@ -1851,3 +1851,64 @@
 
 **Status:** Task complete, awaiting production data to validate full functionality
 ---
+
+## Iteration 20 - US-RC-020: Calculate per-agent win rate from voting history
+**Persona:** Victor 'Vic' Ramanujan (Quantitative Strategist)
+**Completed:** 2026-01-16 14:06
+**Files Changed:**
+- scripts/research/per_agent_performance.py (created)
+- reports/vic_ramanujan/per_agent_performance.md (created)
+- reports/vic_ramanujan/agent_rankings.csv (created)
+- PRD-research-crew.md (marked US-RC-020 complete)
+
+**Learnings:**
+- Pattern: Database queries with triple JOIN required:
+  - agent_votes → decisions → outcomes
+  - Join condition: (d.strategy = o.strategy AND d.crypto = o.crypto AND d.epoch = o.epoch)
+  - Filter: WHERE d.should_trade = 1 (only trades that were executed)
+- Pattern: Per-agent directional analysis critical for understanding contribution:
+  - Calculate separate win rates for Up votes vs Down votes
+  - Agent may be good at one direction but not the other
+  - Example: Sentiment agent might be good at contrarian Down bets but weak on Up
+- Pattern: Accuracy thresholds for recommendations:
+  - <50% = DISABLE (worse than random)
+  - 50-55% = MONITOR (barely beats baseline)
+  - >55% = KEEP (provides edge)
+- Pattern: Report structure for empty database case:
+  - Still generate valid markdown with "INSUFFICIENT DATA" message
+  - Still generate CSV with header row only
+  - Provide recommendations for data collection
+- Gotcha: Must use nested if statements when handling empty data:
+  - First if: Check if sorted_agents is empty
+  - Within else: Add detailed sections (rankings, analysis)
+  - Avoids trying to write table headers with no data
+- Gotcha: CSV must be created even with no data (header row only)
+  - Previous pattern: early return skipped CSV creation
+  - Fix: Ensure CSV generation happens outside markdown file context
+- Context: Agent accuracy calculation logic:
+  - Agent "correct" if voted direction matches actual outcome direction
+  - Example: Agent votes "Up", actual direction = "Up" → correct
+  - Example: Agent votes "Down", actual direction = "Up" → incorrect
+- Context: Quality vs Confidence distinction:
+  - Confidence: Agent's self-reported certainty (0-1)
+  - Quality: Entry quality score based on price/timing (0-1)
+  - High confidence + low accuracy = overconfident agent (calibration issue)
+
+**Implementation Notes:**
+- Created comprehensive per-agent performance analyzer
+- Queries agent_votes joined with decisions and outcomes
+- Aggregates votes by agent using defaultdict
+- Calculates separate Up/Down win rates for directional analysis
+- Generates detailed markdown report with:
+  - Executive summary with agent count and average accuracy
+  - Agent rankings table (sorted by accuracy)
+  - Detailed per-agent analysis with recommendations
+  - Disable candidates section (<50% accuracy)
+  - Methodology explanation
+- Generates CSV table: agent_rankings.csv
+- Handles empty database gracefully (no crash)
+- Script prints summary to console during execution
+- Typecheck passed with py_compile
+- Successfully generates both markdown and CSV even with no data
+
+---

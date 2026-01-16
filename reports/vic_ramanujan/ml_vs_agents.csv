@@ -1,0 +1,7 @@
+strategy_name,strategy_type,total_trades,wins,losses,win_rate,total_pnl,roi,avg_confidence,vs_test_accuracy,vs_agents
+ml_random_forest_50,ML,0,0,0,0.0000,0.00,0.0000,0.0000,+0.0000,
+ml_random_forest_55,ML,0,0,0,0.0000,0.00,0.0000,0.0000,+0.0000,
+ml_random_forest_60,ML,0,0,0,0.0000,0.00,0.0000,0.0000,+0.0000,
+ml_live_test,ML,0,0,0,0.0000,0.00,0.0000,0.0000,+0.0000,
+default,Agents,0,0,0,0.0000,0.00,0.0000,0.0000,N/A,0.0000
+ML_Test_Claimed,Reference,N/A,N/A,N/A,0.6730,N/A,N/A,N/A,0.0000,N/A

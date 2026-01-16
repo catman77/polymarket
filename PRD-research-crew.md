@@ -380,15 +380,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "67.3% test accuracy was claimed. But what's the performance on Jan 2026 data (unseen during training)?"
 
 **Acceptance Criteria:**
-- [ ] Load ML model from `models/` (if exists) or use shadow strategy results
-- [ ] Query shadow strategies: `ml_random_forest_50`, `ml_random_forest_55`, `ml_random_forest_60`
-- [ ] Extract: Win rate, total trades, P&L for each threshold
-- [ ] Compare to claimed 67.3% test accuracy
-- [ ] Generate `reports/vic_ramanujan/ml_vs_agents.csv`
-- [ ] Report: ML actual WR (Jan 2026), vs test WR (67.3%), vs agent WR
-- [ ] Conclusion: Deploy ML or stick with agents?
-- [ ] Test: Script queries ML shadow strategies successfully
-- [ ] Typecheck passes
+- [x] Load ML model from `models/` (if exists) or use shadow strategy results
+- [x] Query shadow strategies: `ml_random_forest_50`, `ml_random_forest_55`, `ml_random_forest_60`
+- [x] Extract: Win rate, total trades, P&L for each threshold
+- [x] Compare to claimed 67.3% test accuracy
+- [x] Generate `reports/vic_ramanujan/ml_vs_agents.csv`
+- [x] Report: ML actual WR (Jan 2026), vs test WR (67.3%), vs agent WR
+- [x] Conclusion: Deploy ML or stick with agents?
+- [x] Test: Script queries ML shadow strategies successfully
+- [x] Typecheck passes
 
 ---
 
