@@ -182,8 +182,8 @@ RISK_MAX_SAME_DIRECTION = 3                 # Max 3 positions in same direction
 RISK_MAX_DIRECTIONAL_EXPOSURE = 0.08        # Max 8% of balance in one direction
 
 # Daily limits
-RISK_DAILY_LOSS_LIMIT_USD = 30.0
-RISK_DAILY_LOSS_LIMIT_PCT = 0.20            # 20%
+RISK_DAILY_LOSS_LIMIT_USD = 50.0            # Raised from $30 to $50 (Jan 16, 2026 - allow recovery trading)
+RISK_DAILY_LOSS_LIMIT_PCT = 0.50            # 50% (raised from 20% to allow contrarian recovery)
 
 # Mode multipliers (applied to position sizing)
 RISK_MODE_MULTIPLIERS = {
