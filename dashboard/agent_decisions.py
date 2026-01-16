@@ -41,31 +41,43 @@ class AgentDecisionTracker:
         """Parse a single decision entry from log lines"""
         decision = {}
 
+        # Look backward for crypto context (e.g., "Making decision for BTC epoch")
+        for i in range(max(0, start_idx-15), start_idx):
+            crypto_match = re.search(r'Making decision for (\w+) epoch', lines[i])
+            if crypto_match:
+                decision['crypto'] = crypto_match.group(1)
+                break
+
         # Look for crypto symbol
         for line in lines[start_idx:start_idx+30]:
             # Extract timestamp
             timestamp_match = re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})', line)
-            if timestamp_match and 'decision' not in decision:
+            if timestamp_match and 'timestamp' not in decision:
                 decision['timestamp'] = timestamp_match.group(1)
 
-            # Agent votes (e.g., "FundingRateAgent | BTC | Up @ 0.45 | Funding: +0.0025%")
-            agent_vote = re.search(r'Agent\.(\w+Agent) - INFO - (\w+Agent) \| (\w+) \| (Up|Down|Neutral) @ ([\d.]+) \| (.+)', line)
-            if agent_vote:
-                agent_name = agent_vote.group(1)
-                crypto = agent_vote.group(3)
-                direction = agent_vote.group(4)
-                confidence = float(agent_vote.group(5))
-                reason = agent_vote.group(6)
+            # Agent votes WITHIN aggregation box (e.g., "⬆️ OrderBookAgent - C:0.51 Q:1.00")
+            agent_in_box = re.search(r'[⬆️⬇️➡️]\s+(\w+Agent)\s+-\s+C:([\d.]+)\s+Q:([\d.]+)', line)
+            if agent_in_box:
+                agent_name = agent_in_box.group(1)
+                confidence = float(agent_in_box.group(2))
+                quality = float(agent_in_box.group(3))
 
                 if 'agents' not in decision:
                     decision['agents'] = []
-                    decision['crypto'] = crypto
+
+                # Determine direction from emoji
+                if '⬆️' in line:
+                    direction = 'Up'
+                elif '⬇️' in line:
+                    direction = 'Down'
+                else:
+                    direction = 'Neutral'
 
                 decision['agents'].append({
                     'name': agent_name,
                     'direction': direction,
                     'confidence': confidence,
-                    'reason': reason
+                    'quality': quality
                 })
 
             # Vote aggregation summary
@@ -236,7 +248,7 @@ def render_decision(decision, crypto):
         for agent in agents:
             agent_dir = agent['direction']
             agent_conf = agent['confidence']
-            agent_reason = agent['reason'][:60]  # Truncate long reasons
+            agent_qual = agent.get('quality', 0)
 
             # Agent direction emoji
             if agent_dir == 'Up':
@@ -246,7 +258,7 @@ def render_decision(decision, crypto):
             else:
                 agent_emoji = '→'
 
-            print(f"    {agent_emoji} {agent['name']:20} @ {agent_conf:4.0%} - {agent_reason}")
+            print(f"    {agent_emoji} {agent['name']:20} @ {agent_conf:4.0%} confidence | {agent_qual:4.0%} quality")
 
     # Show skip reason if not trading
     if not should_trade and skip_reason:
