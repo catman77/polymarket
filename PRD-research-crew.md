@@ -699,14 +699,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Stakeholders need a concrete plan: What changes, when, who owns it, how we measure success."
 
 **Acceptance Criteria:**
-- [ ] Compile top 10 recommendations from synthesis
-- [ ] Prioritize: Quick wins (Week 1), medium effort (Week 2-3), long-term (Week 4+)
-- [ ] Assign owners: Which agent/component needs changes
-- [ ] Define success metrics: How to measure if improvement worked
-- [ ] Generate `reports/DEPLOYMENT_ROADMAP.md`
-- [ ] Format: Timeline, milestones, acceptance criteria, rollback plans
-- [ ] Test: Roadmap covers 4-week timeline with concrete tasks
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Compile top 10 recommendations from synthesis
+- [x] Prioritize: Quick wins (Week 1), medium effort (Week 2-3), long-term (Week 4+)
+- [x] Assign owners: Which agent/component needs changes
+- [x] Define success metrics: How to measure if improvement worked
+- [x] Generate `reports/DEPLOYMENT_ROADMAP.md`
+- [x] Format: Timeline, milestones, acceptance criteria, rollback plans
+- [x] Test: Roadmap covers 4-week timeline with concrete tasks
+- [x] Deliverable is markdown (no typecheck needed)
 
 #### US-RC-035: Define exit criteria and risk thresholds
 **Persona Context:** "When should we shut down the bot? When should we scale up? Clear quantitative triggers prevent emotional decisions."
