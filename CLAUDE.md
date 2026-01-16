@@ -20,13 +20,15 @@ The bot now uses **ML Random Forest** model (as of Jan 15, 2026):
 
 ### Current Performance
 
-- **Live Balance:** $230.90 (as of Jan 15, 2026 18:00 UTC)
-- **Peak Balance:** $365.58 (Jan 15 PM, after fixes and recovery)
-- **Status:** ✅ **ACTIVE** - Trading autonomously
+- **Live Balance:** $200.97 (as of Jan 16, 2026 02:00 UTC)
+- **True Peak Balance:** $300.00 (historical high)
+- **Current Drawdown:** 33% ($99 loss from peak)
+- **Status:** ⚠️ **ACTIVE** - Trading, but exceeded 30% drawdown threshold
 - **Recent Events:**
-  - Jan 15 16:00: Deployed all critical fixes (P0-P3 complete)
-  - Jan 15 17:42: Reset peak balance, bot unhalted and resumed trading
-  - Jan 15 18:00: System stable, 3 open positions (ETH Up, SOL Up, ETH Down)
+  - Jan 16 01:56: Discovered state file balance desync ($186 error)
+  - Jan 16 01:56: Corrected state file to match on-chain balance ($200.97)
+  - Jan 15: Recovered from $6.81 to $200.97 (+$194 profit)
+  - **CRITICAL:** Drawdown protection failed due to state tracking desync
 - **Critical Fixes Applied:**
   - ✅ Position conflict detection (live API checking)
   - ✅ Auto-redemption fixed (checks every cycle)

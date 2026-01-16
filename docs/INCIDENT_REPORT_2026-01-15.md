@@ -13,13 +13,16 @@
 
 **Actual Situation:**
 - **Real Balance:** $200.97 (on-chain USDC)
-- **State File Balance:** $14.91 (WRONG - massive desync)
-- **Actual Drawdown:** ~20% from peak ($251 → $201), NOT 94%
-- **Today's Performance:** +$194 profit (+2850% from $6.81 day start)
+- **State File Balance:** $14.91 (WRONG - massive desync of $186)
+- **True Peak:** $300 (not $251 as previously documented)
+- **Actual Loss:** $99.03 (33% drawdown from $300 peak)
+- **Today's Performance:** +$194 profit (recovered from $6.81 day start)
 
-**Root Cause:** State file balance tracking completely desynced from actual on-chain balance by $186. The "catastrophic losses" were a **data tracking failure**, not actual trading losses.
+**Root Causes:**
+1. **Real trading losses:** $99 loss (33% drawdown) that SHOULD have triggered halt at 30%
+2. **State tracking failure:** Balance desynced by $186, preventing accurate monitoring
 
-**Trading Performance:** Actually VERY GOOD - recovered from $6.81 to $200.97 today.
+**Critical Failure:** Bot exceeded 30% drawdown threshold without halting. This is a serious risk management failure.
 
 ## Key Findings
 
@@ -173,25 +176,31 @@ ml_live_ml_random_forest, sol, epoch:1768522500, entry:$0.20
 - [ ] Create trade archive before cleanup/redemption
 - [ ] Implement external backup of critical data
 
-### Issue #4: No Drawdown Protection Triggered
+### Issue #4: Drawdown Protection Failed - **CRITICAL**
 
-**Severity:** 🟡 **MEDIUM**
+**Severity:** 🔴 **CRITICAL**
 
 **Evidence:**
-- 94% drawdown occurred without halt
-- Mode still "normal" despite catastrophic losses
-- `halt_reason` empty
+- 33% drawdown occurred ($300 → $201) without halt
+- Threshold is 30% = should halt at $210
+- Bot continued trading below halt threshold
+- Mode still "normal" despite exceeding limit
 
-**Potential Causes:**
-1. Drawdown calculation using incorrect balance
-2. Peak balance reset before protection triggered
-3. Protection disabled or threshold too high
+**Why Protection Failed:**
+1. **State file balance was wrong** - Bot thought balance was $14.91, not $200.97
+2. **Peak balance likely reset** - State shows peak=$14.91 instead of $300
+3. **Drawdown calc used wrong values** - Can't calculate drawdown with bad data
+4. **Desync prevented accurate monitoring** - $186 tracking error masked the problem
+
+**Root Cause:** State tracking desync prevented drawdown protection from working. Bot had no way to know it exceeded 30% limit because it was tracking the wrong balance.
 
 **Action Required:**
-- [ ] Review drawdown calculation logic
-- [ ] Lower MAX_DRAWDOWN_PCT threshold (currently 30%)
-- [ ] Add secondary protection based on absolute dollar loss
-- [ ] Implement emergency halt on rapid balance drops
+- [ ] Review why peak_balance was reset from $300 to $14.91
+- [ ] Implement on-chain balance verification EVERY cycle
+- [ ] Add independent drawdown monitoring (not reliant on state file)
+- [ ] Alert if state balance differs from blockchain by >5%
+- [ ] Consider lowering threshold to 25% for safety margin
+- [ ] Add absolute dollar loss limit ($100 = halt)
 
 ---
 
@@ -205,18 +214,24 @@ Based on corrected data:
 - **Discrepancy:** $186.06
 
 **Historical Context:**
-- Historical peak: ~$251 (from CLAUDE.md)
-- Actual drawdown: **$50 loss (20%)** - NORMAL range
-- This is within acceptable risk parameters
+- **True Peak Balance:** $300.00
+- **Current Balance:** $200.97
+- **Total Loss:** $99.03 (33% drawdown)
+- **Drawdown Threshold:** 30% = should halt at $210
+
+**Critical Failure:** Bot lost $99 (33% drawdown) without halting. The 30% protection failed.
 
 **Today's Performance (Jan 15):**
-- Day start balance: $6.81
+- Day start balance: $6.81 (already deep in drawdown)
 - Current balance: $200.97
-- Daily P&L: **+$194.16** (+2850%!)
-- **Conclusion:** Bot had EXCELLENT performance today, NOT catastrophic losses
+- Daily P&L: **+$194.16** (excellent recovery)
+- **Conclusion:** TODAY was profitable, but OVERALL we're down $99 from peak
 
 **What Happened:**
-The state file tracking system desynced from reality by $186. This created the false appearance of massive losses when actual trading was profitable.
+1. **Real losses occurred** - $99 loss from $300 peak (likely over multiple days)
+2. **Risk protection failed** - Should have halted at $210 (30% drawdown)
+3. **State tracking desynced** - Made it impossible to monitor drawdown accurately
+4. **Recovery today** - Bot recovered from $6.81 to $200.97 (+$194)
 
 ---
 
