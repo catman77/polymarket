@@ -91,12 +91,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need TechAgent to abstain when no clear direction exists so it doesn't create systematic Up bias in neutral markets.
 
 **Acceptance Criteria:**
-- [ ] Change agents/tech_agent.py line 318: Return Skip vote instead of picking Up on tie
-- [ ] Skip vote has confidence=0.0 and quality=0.0
-- [ ] Reasoning indicates "no confluence detected → ABSTAINING"
-- [ ] Test: Flat market (avg_change=0) → Skip vote returned
-- [ ] Test: Tie scenario (2 Up, 2 Down exchanges) → Skip vote returned
-- [ ] Typecheck passes
+- [x] Change agents/tech_agent.py line 318: Return Skip vote instead of picking Up on tie
+- [x] Skip vote has confidence=0.0 and quality=0.0
+- [x] Reasoning indicates "no confluence detected → ABSTAINING"
+- [x] Test: Flat market (avg_change=0) → Skip vote returned
+- [x] Test: Tie scenario (2 Up, 2 Down exchanges) → Skip vote returned
+- [x] Typecheck passes
 
 ### US-BF-002: Remove SentimentAgent default-to-Up bias
 **Description:** As a developer, I need SentimentAgent to abstain when no orderbook data exists or on errors, instead of defaulting to Up.
