@@ -400,6 +400,10 @@ SHADOW_STRATEGIES = [
     # WEEK 3: KELLY CRITERION POSITION SIZING (Jan 15, 2026)
     # Testing mathematically optimal bet sizing vs fixed tiers
     'kelly_sizing',          # Kelly Criterion (default thresholds 0.40/0.40)
+
+    # BUG FIX VALIDATION (Jan 16, 2026)
+    # Shadow strategy with ALL 16 bug fixes applied for 24hr validation
+    'fixed_bugs',           # All fixes (US-BF-001 to US-BF-015) - test before live deployment
 ]
 
 # Shadow trading configuration

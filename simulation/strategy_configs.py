@@ -844,6 +844,75 @@ STRATEGY_LIBRARY = {
             'OnChainAgent': 0.0,
             'SocialSentimentAgent': 0.0
         }
+    ),
+
+    # =============================================================================
+    # BUG FIX VALIDATION (Jan 16, 2026)
+    # =============================================================================
+    # Shadow strategy with ALL 16 bug fixes applied for validation
+
+    'fixed_bugs': StrategyConfig(
+        name='fixed_bugs',
+        description='All 16 bug fixes applied (US-BF-001 through US-BF-015) - shadow test validation',
+
+        # US-BF-014: Lower entry price thresholds (0.40 → 0.25)
+        consensus_threshold=0.75,  # US-BF-010: Verified consensus threshold
+        min_confidence=0.40,       # Maintain current threshold
+        min_individual_confidence=0.30,  # Maintain current threshold
+
+        # US-BF-013: ML mode disabled (agent-only mode)
+        use_ml_model=False,
+
+        # US-BF-015: Bull market overrides disabled
+        # (handled at bot level via DISABLE_BULL_OVERRIDES flag)
+
+        # US-BF-007: Weighted score averaging (not sum)
+        # (handled in vote_aggregator.py)
+
+        # US-BF-006: Skip vote filtering
+        # US-BF-005: Skip vote type implemented
+        # (handled in vote_aggregator.py and base_agent.py)
+
+        # US-BF-001, US-BF-002, US-BF-003: Agents return Skip on uncertain signals
+        # (TechAgent, SentimentAgent, RegimeAgent now abstain instead of default-to-Up)
+
+        # US-BF-004: RSI neutral zone returns 0.5 confidence (not 1.0)
+        # (handled in tech_agent.py)
+
+        # US-BF-008, US-BF-009: Directional balance tracker monitors for >70% bias
+        # (handled in decision_engine.py)
+
+        # US-BF-012: Comprehensive threshold debug logging
+        # (handled in decision_engine.py and all agents)
+
+        adaptive_weights=True,
+        regime_adjustment_enabled=True,
+
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0,
+            'OrderBookAgent': 0.8,
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        },
+
+        # US-BF-011: Raised confluence threshold (0.15% → 0.30%)
+        tech_config={
+            'TECH_CONFLUENCE_THRESHOLD': 0.003,  # 0.30% (filters random walk noise)
+            'TECH_MIN_EXCHANGES_AGREE': 2
+        },
+
+        # US-BF-014: Lower entry limits
+        sentiment_config={
+            'SENTIMENT_CONTRARIAN_MAX_ENTRY': 0.25,  # Reduced from 0.40
+            'SENTIMENT_CONTRARIAN_PRICE_THRESHOLD': 0.70
+        },
+
+        max_position_pct=0.15,
+        max_same_direction=3
     )
 }
 

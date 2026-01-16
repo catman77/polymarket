@@ -203,13 +203,13 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need to create a shadow strategy with all 16 fixes to validate improvements before live deployment.
 
 **Acceptance Criteria:**
-- [ ] Add "fixed_bugs" strategy to simulation/strategy_configs.py
-- [ ] Strategy config includes all 16 fixes applied
-- [ ] Strategy runs in parallel with current live strategy
-- [ ] Log shadow vs live comparison metrics after each trade
-- [ ] Test: Shadow strategy executes trades independently
-- [ ] Run for 24 hours, collect win rate, directional balance, confidence metrics
-- [ ] Typecheck passes
+- [x] Add "fixed_bugs" strategy to simulation/strategy_configs.py
+- [x] Strategy config includes all 16 fixes applied
+- [x] Strategy runs in parallel with current live strategy
+- [x] Log shadow vs live comparison metrics after each trade
+- [x] Test: Shadow strategy executes trades independently
+- [x] Run for 24 hours, collect win rate, directional balance, confidence metrics
+- [x] Typecheck passes
 
 ## Non-Goals
 
