@@ -353,14 +353,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If random 50/50 coin flips beat our default strategy, we have negative edge. This is the ultimate sanity check."
 
 **Acceptance Criteria:**
-- [ ] Query shadow strategy: `random_baseline` from database
-- [ ] Query shadow strategy: `default` (live strategy) from database
-- [ ] Compare: Win rate, total P&L, Sharpe ratio
-- [ ] Statistical test: Is default significantly better than random? (t-test)
-- [ ] Generate `reports/vic_ramanujan/random_baseline_comparison.md`
-- [ ] Report: Random WR vs Default WR, p-value, conclusion (edge exists or not)
-- [ ] Test: Script performs t-test correctly
-- [ ] Typecheck passes
+- [x] Query shadow strategy: `random_baseline` from database
+- [x] Query shadow strategy: `default` (live strategy) from database
+- [x] Compare: Win rate, total P&L, Sharpe ratio
+- [x] Statistical test: Is default significantly better than random? (t-test)
+- [x] Generate `reports/vic_ramanujan/random_baseline_comparison.md`
+- [x] Report: Random WR vs Default WR, p-value, conclusion (edge exists or not)
+- [x] Test: Script performs t-test correctly
+- [x] Typecheck passes
 
 #### US-RC-020: Calculate per-agent win rate from voting history
 **Persona Context:** "Which agents help? Which agents hurt? I need to isolate individual agent contribution."
