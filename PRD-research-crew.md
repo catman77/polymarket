@@ -411,15 +411,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "If we hit a 10-loss streak, do the tiered position sizes protect us? Or do we still blow up?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/position_sizing_stress_test.py`
-- [ ] Simulate: 10 consecutive losses at different balance levels ($50, $100, $200)
-- [ ] Apply tiered sizing: 15% (<$30), 10% ($30-75), 7% ($75-150), 5% (>$150)
-- [ ] Calculate: Final balance after 10 losses
-- [ ] Calculate: Drawdown % from starting balance
-- [ ] Generate `reports/rita_stevens/stress_test_results.csv`
-- [ ] Report: Worst-case drawdown, comparison to 30% halt threshold
-- [ ] Test: 10-loss streak at $200 should NOT trigger >30% drawdown
-- [ ] Typecheck passes
+- [x] Create `scripts/research/position_sizing_stress_test.py`
+- [x] Simulate: 10 consecutive losses at different balance levels ($50, $100, $200)
+- [x] Apply tiered sizing: 15% (<$30), 10% ($30-75), 7% ($75-150), 5% (>$150)
+- [x] Calculate: Final balance after 10 losses
+- [x] Calculate: Drawdown % from starting balance
+- [x] Generate `reports/rita_stevens/stress_test_results.csv`
+- [x] Report: Worst-case drawdown, comparison to 30% halt threshold
+- [x] Test: 10-loss streak at $200 should NOT trigger >30% drawdown
+- [x] Typecheck passes
 
 #### US-RC-024: Audit position limit enforcement
 **Persona Context:** "Max 4 positions, max 3 same direction, max 8% directional exposure. Are these hard limits or just suggestions?"
