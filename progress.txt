@@ -249,3 +249,25 @@
   - Typecheck passed for decision_engine.py
   - Integration complete: Balance tracker will now alert on directional cascades (>70% same direction)
 ---
+
+## Iteration 14 - US-BF-010: Verify consensus threshold
+- Added startup logging to show configured thresholds in DecisionEngine.__init__ (line 256)
+- Added debug logging at consensus threshold check (line 347-361)
+- Logs show: "Consensus threshold check: score={score} vs threshold={threshold}"
+- Added pass/fail messages with emoji indicators (❌ below, ✅ above)
+- Files changed:
+  - coordinator/decision_engine.py (added startup logging and threshold check logging)
+  - test_consensus_threshold.py (created comprehensive test suite with 5 tests)
+  - PRD.md (marked US-BF-010 complete)
+- Learnings for future iterations:
+  - CONSENSUS_THRESHOLD is imported from config/agent_config.py (set to 0.75)
+  - Threshold check happens at line 348: `if prediction.weighted_score < CONSENSUS_THRESHOLD`
+  - Startup logging shows both thresholds: consensus and min_confidence
+  - Debug logging format: "score={value:.3f} vs threshold={value:.2f}"
+  - Pass/fail logged with visual indicators for easy log scanning
+  - MockAgent for testing must use synchronous `def analyze()` not async
+  - Vote dataclass requires agent_name parameter (not optional)
+  - Test coverage: startup logging, below threshold (0.74), above threshold (0.80), exact threshold (0.75), config value verification
+  - All 5 tests passed, typecheck passed
+  - Debug logs now show exactly when and why consensus checks pass or fail
+---
