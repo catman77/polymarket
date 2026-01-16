@@ -301,7 +301,7 @@ Each individual researcher PRD will follow this structure:
 ### Subsequent Outputs (8 Individual PRDs)
 1. [x] PRD: Dr. Kenji Nakamoto - Data Forensics (COMPLETE - docs/PRD-kenji-nakamoto-data-forensics.md)
 2. [x] PRD: Dmitri Volkov - System Reliability (COMPLETE - docs/PRD-dmitri-volkov-system-reliability.md)
-3. [ ] PRD: Dr. Sarah Chen - Probabilistic Mathematics
+3. [x] PRD: Dr. Sarah Chen - Probabilistic Mathematics (COMPLETE - docs/PRD-sarah-chen-probabilistic-math.md)
 4. [ ] PRD: James Martinez - Market Microstructure
 5. [ ] PRD: Victor Ramanujan - Quantitative Strategy
 6. [ ] PRD: Dr. Amara Johnson - Behavioral Finance
