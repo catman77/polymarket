@@ -309,15 +309,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Early trades (0-300s) vs late trades (720-900s) have different edges. Data will tell us which is best."
 
 **Acceptance Criteria:**
-- [ ] Use parsed trade data, extract "seconds into epoch" field
-- [ ] Bucket by timing: 0-300s (early), 300-600s (mid), 600-900s (late)
-- [ ] Calculate win rate per timing bucket
-- [ ] Test significance: ANOVA or chi-square
-- [ ] Generate `reports/jimmy_martinez/timing_window_analysis.md`
-- [ ] Create heatmap: `reports/jimmy_martinez/timing_heatmap.png` (WR by 60s buckets)
-- [ ] Report: Optimal timing windows, win rate differences, statistical significance
-- [ ] Test: Script generates heatmap with color-coded win rates
-- [ ] Typecheck passes
+- [x] Use parsed trade data, extract "seconds into epoch" field
+- [x] Bucket by timing: 0-300s (early), 300-600s (mid), 600-900s (late)
+- [x] Calculate win rate per timing bucket
+- [x] Test significance: ANOVA or chi-square
+- [x] Generate `reports/jimmy_martinez/timing_window_analysis.md`
+- [x] Create heatmap: `reports/jimmy_martinez/timing_heatmap.png` (WR by 60s buckets)
+- [x] Report: Optimal timing windows, win rate differences, statistical significance
+- [x] Test: Script generates heatmap with color-coded win rates
+- [x] Typecheck passes
 
 #### US-RC-017: Evaluate contrarian strategy performance
 **Persona Context:** "Contrarian is currently disabled (ENABLE_CONTRARIAN_TRADES=False). But does historical data show it worked?"
