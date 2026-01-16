@@ -151,10 +151,18 @@ class VoteAggregator:
         down_votes = [v for v in votes if v.direction == "Down"]
         neutral_votes = [v for v in votes if v.direction == "Neutral"]
 
-        # Calculate weighted scores for each direction
-        up_score = sum(v.weighted_score(weights.get(v.agent_name, 1.0)) for v in up_votes)
-        down_score = sum(v.weighted_score(weights.get(v.agent_name, 1.0)) for v in down_votes)
-        neutral_score = sum(v.weighted_score(weights.get(v.agent_name, 1.0)) for v in neutral_votes)
+        # Calculate weighted scores for each direction (average instead of sum to prevent stacking)
+        # Formula: weighted_score = sum(confidence * weight) / sum(weight)
+        def calc_avg_weighted_score(vote_list):
+            if not vote_list:
+                return 0.0
+            total_weighted = sum(v.weighted_score(weights.get(v.agent_name, 1.0)) for v in vote_list)
+            total_weight = sum(weights.get(v.agent_name, 1.0) for v in vote_list)
+            return total_weighted / total_weight if total_weight > 0 else 0.0
+
+        up_score = calc_avg_weighted_score(up_votes)
+        down_score = calc_avg_weighted_score(down_votes)
+        neutral_score = calc_avg_weighted_score(neutral_votes)
 
         # Determine winning direction
         if up_score > down_score and up_score > neutral_score:
@@ -187,6 +195,11 @@ class VoteAggregator:
             participating_agents=[v.agent_name for v in votes],
             votes=votes,
             agreement_rate=agreement_rate
+        )
+
+        # Debug logging for weighted scores (helps diagnose aggregation)
+        self.log.debug(
+            f"Weighted scores (averaged): Up={up_score:.3f}, Down={down_score:.3f}, Neutral={neutral_score:.3f}"
         )
 
         self.log.info(

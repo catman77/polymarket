@@ -147,12 +147,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need weighted scores to average instead of sum to prevent weak signals from stacking into false consensus.
 
 **Acceptance Criteria:**
-- [ ] Change coordinator/vote_aggregator.py lines 140-142: Divide sum by count
-- [ ] Formula: weighted_score = sum(confidence * weight) / sum(weight)
-- [ ] Test: Three 0.35 confidence votes → weighted score ~0.35 (not 1.05)
-- [ ] Test: One 0.80 vote + two 0.30 votes → weighted average calculated correctly
-- [ ] Log weighted score for debugging
-- [ ] Typecheck passes
+- [x] Change coordinator/vote_aggregator.py lines 140-142: Divide sum by count
+- [x] Formula: weighted_score = sum(confidence * weight) / sum(weight)
+- [x] Test: Three 0.35 confidence votes → weighted score ~0.35 (not 1.05)
+- [x] Test: One 0.80 vote + two 0.30 votes → weighted average calculated correctly
+- [x] Log weighted score for debugging
+- [x] Typecheck passes
 
 ### US-BF-008: Add directional balance tracker class
 **Description:** As a developer, I need a tracker that monitors directional balance over rolling windows to detect cascading bias early.
