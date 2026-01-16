@@ -2739,3 +2739,125 @@ This analysis provides actionable recommendations:
 5. Monitor: Does momentum persist over time? Or does it fade?
 
 ---
+
+## Iteration 30 - US-RC-030: Analyze Regime Classification Accuracy
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16 14:51 UTC
+**Files Changed:**
+- scripts/research/regime_validation.py (created)
+- reports/eleanor_nash/regime_validation.md (generated)
+- PRD-research-crew.md (marked US-RC-030 complete)
+
+**Learnings:**
+- Pattern: Regime classification analysis requires parsing RegimeAgent mentions in logs
+  - Look for patterns: "RegimeAgent", "regime", "BULL", "BEAR", "SIDEWAYS", "CHOPPY", "VOLATILE", "NEUTRAL"
+  - Extract: timestamp, crypto, regime label, optional confidence percentage
+  - Match crypto symbol (BTC/ETH/SOL/XRP) to associate regime with asset
+- Pattern: Validation without ground truth focuses on internal consistency
+  - Transition matrix: How often does BULL → BEAR, BEAR → SIDEWAYS, etc.
+  - Rapid oscillations: Regime changes within 30 minutes suggest noise
+  - Dominant regime: One regime >70% of time suggests bias
+  - Crypto-specific bias: One crypto always classified same regime
+- Pattern: Manual validation workflow for accuracy
+  - Sample 20 random epochs from logs
+  - For each: Check TradingView chart, manually classify regime
+  - Calculate: Accuracy = Correct / Total
+  - Report includes table with sample epochs for manual validation
+- Pattern: Game theory perspective on regime classification
+  - Accuracy >85%: Exploitable information, enable regime-specific strategies
+  - Accuracy 70-85%: Useful but needs caution
+  - Accuracy <70%: Just noise, disable RegimeAgent
+  - Biased (>70% one regime): Major concern, fix or remove
+- Pattern: Transition matrix visualization
+  - Rows = "From" regime, Columns = "To" regime
+  - Cell values = count of transitions
+  - Diagonal = persistence (regime stays same)
+  - Off-diagonal = regime changes
+- Pattern: Misclassification pattern detection
+  - Rapid oscillations: <30 min between transitions (too sensitive)
+  - Dominant regime: >70% one type (bias or genuine prolonged regime)
+  - Crypto-specific bias: One crypto >80% same regime (asset-specific or biased logic)
+- Gotcha: RegimeAgent may be disabled in config
+  - Current logs show 0 classifications → RegimeAgent not running
+  - Report generated with "NO DATA AVAILABLE" section
+  - Action: Enable RegimeAgent, wait for bot to accumulate data
+- Gotcha: Log parsing flexibility required
+  - Regime labels can appear in various contexts (votes, classifications, summaries)
+  - Confidence percentages sometimes present, sometimes missing
+  - Crypto symbol may not always be in same position
+- Gotcha: Without VPS logs, report shows infrastructure readiness
+  - Script handles empty data gracefully (no crash)
+  - Generates report explaining what's needed
+  - Provides clear next steps for when data becomes available
+- Context: Prof. Nash's game theory mindset
+  - Question: "Does regime detection provide exploitable information?"
+  - Approach: Validate accuracy, detect bias, test for consistency
+  - Conclusion: Even imperfect classification can be useful if symmetric
+  - Warning: Biased classification creates false signals → worse than random
+- Context: Strategic implications of regime accuracy
+  - High accuracy → Enable regime-adaptive strategies (contrarian in sideways, momentum in trending)
+  - Low accuracy → Disable RegimeAgent, simplify system
+  - Biased → Fix or remove (worse than no regime detection)
+- Handled empty database/logs gracefully
+  - Script exits cleanly with informative message (not error)
+  - Report generated with "NO REGIME CLASSIFICATIONS FOUND" section
+  - Explains possible causes and next steps
+
+**Implementation Notes:**
+- Created comprehensive regime validation analyzer with 5 main components:
+  1. Parse logs: Extract RegimeAgent classifications (timestamp, crypto, regime, confidence)
+  2. Analyze patterns: Distribution by regime type, crypto, hour of day
+  3. Analyze transitions: Track regime changes (BULL → BEAR, etc.), detect rapid oscillations
+  4. Detect misclassifications: Dominant regime bias, crypto-specific bias, rapid oscillations
+  5. Generate confusion matrix: Transition matrix showing regime change patterns
+  6. Generate report: Comprehensive analysis with manual validation workflow
+- RegimeClassification dataclass: timestamp, crypto, regime, confidence, raw_line
+- RegimeValidator class: Parsing, analysis, reporting logic
+- Pattern matching: Flexible regex to handle various log formats
+- Sample selection: Random 20 epochs for manual validation (or all if <20)
+- Report structure:
+  1. Executive summary (total classifications, date range, avg confidence)
+  2. Regime distribution (by type, percentage)
+  3. Dominant regime detection (>70% bias warning)
+  4. Per-crypto analysis (crypto-specific biases)
+  5. Transition analysis (recent transitions, rapid oscillations)
+  6. Transition matrix (confusion matrix showing regime changes)
+  7. Manual validation workflow (20 sample epochs with instructions)
+  8. Recommendations (address bias, reduce oscillations, next steps)
+  9. Prof. Nash's game theory assessment (strategic implications)
+- Handles edge cases: Empty logs, no classifications, missing data
+- ASCII table formatting for markdown compatibility
+- Clear action items for manual validation and next steps
+
+**Key Findings (when data available):**
+Script will identify:
+1. Regime distribution: Which regimes dominate? (BULL, BEAR, SIDEWAYS, etc.)
+2. Dominant regime bias: >70% one type suggests potential classification bias
+3. Crypto-specific bias: One crypto always classified same regime
+4. Rapid oscillations: Transitions <30 min apart suggest over-sensitivity
+5. Transition patterns: How often does BULL → BEAR, BEAR → SIDEWAYS, etc.
+6. Manual validation workflow: 20 sample epochs with instructions for accuracy calculation
+
+**Prof. Eleanor Nash's Assessment:**
+> "In game theory, we care about whether regime detection provides exploitable information.
+> If RegimeAgent can't accurately classify markets, it's just noise—worse than random.
+> Manual validation is critical: Even 75% accuracy can be useful if misclassifications
+> are symmetric (false BULL = false BEAR equally). But if biased toward one regime,
+> we're trading on false signals."
+
+Strategic implications:
+- High accuracy (>85%): Enable regime-specific strategies
+- Moderate accuracy (70-85%): Useful but needs caution
+- Low accuracy (<70%): Disable RegimeAgent
+- Biased (>70% one regime): Fix or remove
+
+**Next Steps:**
+1. Wait for VPS trading to accumulate regime classifications (requires RegimeAgent enabled)
+2. Re-run analysis: `python3 scripts/research/regime_validation.py`
+3. Complete manual validation of 20 sample epochs (check TradingView charts)
+4. Calculate accuracy percentage
+5. If accuracy <70%: Improve or disable RegimeAgent
+6. If accuracy >85%: Enable regime-adaptive strategies
+7. Monitor weekly: Re-run to track regime detection quality over time
+
+---

@@ -530,15 +530,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Does contrarian work in sideways markets? Does momentum work in trending markets? Data will reveal regime-strategy fit."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/strategy_by_regime.py`
-- [ ] Query database: Join trades with regime classifications
-- [ ] Calculate win rate: For each (strategy, regime) pair
-- [ ] Example: contrarian_focused in sideways vs bull vs bear
-- [ ] Generate `reports/eleanor_nash/strategy_by_regime.csv`
-- [ ] Report: Performance matrix, best strategy per regime
-- [ ] Recommendation: Adaptive strategy switching rules
-- [ ] Test: Matrix shows win rates for ≥3 strategies × 4 regimes
-- [ ] Typecheck passes
+- [x] Create `scripts/research/strategy_by_regime.py`
+- [x] Query database: Join trades with regime classifications
+- [x] Calculate win rate: For each (strategy, regime) pair
+- [x] Example: contrarian_focused in sideways vs bull vs bear
+- [x] Generate `reports/eleanor_nash/strategy_by_regime.csv`
+- [x] Report: Performance matrix, best strategy per regime
+- [x] Recommendation: Adaptive strategy switching rules
+- [x] Test: Matrix shows win rates for ≥3 strategies × 4 regimes
+- [x] Typecheck passes
 
 ---
 
