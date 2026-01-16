@@ -8,6 +8,7 @@ trade execution decisions with risk management integration.
 
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
+from collections import deque
 import logging
 from datetime import datetime
 
@@ -20,6 +21,138 @@ from coordinator.vote_aggregator import VoteAggregator, AggregatePrediction, cal
 from config.agent_config import CONSENSUS_THRESHOLD, MIN_CONFIDENCE
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class DirectionalDecision:
+    """
+    Records a single decision with direction and timestamp.
+
+    Used by DirectionalBalanceTracker to monitor for cascading bias.
+    """
+    direction: str  # "Up" or "Down"
+    timestamp: float
+
+
+class DirectionalBalanceTracker:
+    """
+    Monitors directional balance over rolling windows to detect cascading bias.
+
+    Tracks the last N decisions and alerts when >70% are in the same direction,
+    which indicates systematic bias (e.g., always predicting Up regardless of market).
+
+    Usage:
+        tracker = DirectionalBalanceTracker(window_size=20)
+
+        # After each decision
+        tracker.record("Up")
+
+        # Check for bias
+        if tracker.has_bias():
+            print(tracker.get_balance_summary())
+    """
+
+    def __init__(self, window_size: int = 20, bias_threshold: float = 0.70):
+        """
+        Initialize directional balance tracker.
+
+        Args:
+            window_size: Number of recent decisions to track (default: 20)
+            bias_threshold: Alert threshold for directional imbalance (default: 0.70 = 70%)
+        """
+        self.window_size = window_size
+        self.bias_threshold = bias_threshold
+        self.decisions: deque = deque(maxlen=window_size)
+        self.log = logging.getLogger(f"{__name__}.DirectionalBalanceTracker")
+
+    def record(self, direction: str):
+        """
+        Record a new decision.
+
+        Args:
+            direction: "Up" or "Down" (Skip/Neutral decisions are not tracked)
+        """
+        if direction not in ["Up", "Down"]:
+            # Don't track Skip or Neutral decisions
+            return
+
+        decision = DirectionalDecision(
+            direction=direction,
+            timestamp=datetime.now().timestamp()
+        )
+        self.decisions.append(decision)
+
+        self.log.debug(f"Recorded {direction} decision (total: {len(self.decisions)})")
+
+    def get_balance(self) -> Dict[str, float]:
+        """
+        Calculate directional percentages over the rolling window.
+
+        Returns:
+            Dict with 'up_pct', 'down_pct', 'total_decisions'
+        """
+        if not self.decisions:
+            return {
+                'up_pct': 0.0,
+                'down_pct': 0.0,
+                'total_decisions': 0
+            }
+
+        up_count = sum(1 for d in self.decisions if d.direction == "Up")
+        down_count = sum(1 for d in self.decisions if d.direction == "Down")
+        total = len(self.decisions)
+
+        return {
+            'up_pct': up_count / total if total > 0 else 0.0,
+            'down_pct': down_count / total if total > 0 else 0.0,
+            'total_decisions': total
+        }
+
+    def has_bias(self) -> bool:
+        """
+        Check if directional bias exceeds threshold.
+
+        Returns:
+            True if >70% (or configured threshold) of decisions in same direction
+        """
+        balance = self.get_balance()
+
+        # Need at least window_size decisions to detect bias
+        if balance['total_decisions'] < self.window_size:
+            return False
+
+        # Check if either direction exceeds threshold
+        return (balance['up_pct'] >= self.bias_threshold or
+                balance['down_pct'] >= self.bias_threshold)
+
+    def get_balance_summary(self) -> str:
+        """
+        Get human-readable balance summary.
+
+        Returns:
+            Formatted string with directional percentages
+        """
+        balance = self.get_balance()
+
+        if balance['total_decisions'] == 0:
+            return "No decisions tracked yet"
+
+        summary = (
+            f"Directional Balance ({balance['total_decisions']} decisions): "
+            f"Up {balance['up_pct']:.1%} | Down {balance['down_pct']:.1%}"
+        )
+
+        if self.has_bias():
+            dominant = "Up" if balance['up_pct'] > balance['down_pct'] else "Down"
+            dominant_pct = max(balance['up_pct'], balance['down_pct'])
+            summary += f" ⚠️ BIAS DETECTED: {dominant} {dominant_pct:.1%}"
+
+        return summary
+
+    def reset(self):
+        """Clear all tracked decisions."""
+        self.decisions.clear()
+        self.log.info("Reset directional balance tracker")
 
 
 @dataclass

@@ -158,13 +158,13 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need a tracker that monitors directional balance over rolling windows to detect cascading bias early.
 
 **Acceptance Criteria:**
-- [ ] Create DirectionalBalanceTracker class in coordinator/decision_engine.py
-- [ ] Track last 20 decisions with direction and timestamp
-- [ ] Calculate rolling directional percentages
-- [ ] Alert when >70% same direction over 20+ decisions
-- [ ] Test: 15 Up / 5 Down → returns 75% Up bias with alert
-- [ ] Test: 10 Up / 10 Down → returns 50% balanced, no alert
-- [ ] Typecheck passes
+- [x] Create DirectionalBalanceTracker class in coordinator/decision_engine.py
+- [x] Track last 20 decisions with direction and timestamp
+- [x] Calculate rolling directional percentages
+- [x] Alert when >70% same direction over 20+ decisions
+- [x] Test: 15 Up / 5 Down → returns 75% Up bias with alert
+- [x] Test: 10 Up / 10 Down → returns 50% balanced, no alert
+- [x] Typecheck passes
 
 ### US-BF-009: Integrate balance tracker
 **Description:** As a developer, I need the balance tracker integrated into decision logic to log warnings when directional cascades are detected.
