@@ -329,8 +329,8 @@ class MessageFormatter:
             cursor.execute('''
                 SELECT
                     COUNT(*) as total,
-                    SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END) as wins,
-                    SUM(CASE WHEN result = 'loss' THEN 1 ELSE 0 END) as losses,
+                    SUM(CASE WHEN predicted_direction = actual_direction THEN 1 ELSE 0 END) as wins,
+                    SUM(CASE WHEN predicted_direction != actual_direction THEN 1 ELSE 0 END) as losses,
                     SUM(pnl) as total_pnl,
                     AVG(pnl) as avg_pnl,
                     MAX(pnl) as best_trade,
