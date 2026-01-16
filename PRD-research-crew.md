@@ -366,15 +366,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Which agents help? Which agents hurt? I need to isolate individual agent contribution."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/per_agent_performance.py`
-- [ ] Query `simulation/trade_journal.db` → agent_votes table
-- [ ] For each agent: Calculate win rate when agent voted Up vs Down
-- [ ] Calculate: Agent accuracy (% of trades where agent was correct)
-- [ ] Generate `reports/vic_ramanujan/per_agent_performance.md`
-- [ ] Report: Agent rankings by accuracy, agents with <50% accuracy (disable candidates)
-- [ ] Create table: `reports/vic_ramanujan/agent_rankings.csv`
-- [ ] Test: Script successfully queries agent_votes table and calculates accuracy
-- [ ] Typecheck passes
+- [x] Create `scripts/research/per_agent_performance.py`
+- [x] Query `simulation/trade_journal.db` → agent_votes table
+- [x] For each agent: Calculate win rate when agent voted Up vs Down
+- [x] Calculate: Agent accuracy (% of trades where agent was correct)
+- [x] Generate `reports/vic_ramanujan/per_agent_performance.md`
+- [x] Report: Agent rankings by accuracy, agents with <50% accuracy (disable candidates)
+- [x] Create table: `reports/vic_ramanujan/agent_rankings.csv`
+- [x] Test: Script successfully queries agent_votes table and calculates accuracy
+- [x] Typecheck passes
 
 #### US-RC-021: Test ML model on post-training data
 **Persona Context:** "67.3% test accuracy was claimed. But what's the performance on Jan 2026 data (unseen during training)?"
