@@ -573,22 +573,22 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Why do we have 11 agents? Why consensus voting? Who decided this? Let's question every assumption."
 
 **Acceptance Criteria:**
-- [ ] Create `reports/alex_rousseau/assumption_audit.md`
-- [ ] Document every major architectural decision:
+- [x] Create `reports/alex_rousseau/assumption_audit.md`
+- [x] Document every major architectural decision:
   - Multi-agent consensus (why not single model?)
   - Weighted voting (why not equal weights?)
   - Adaptive thresholds (why not static?)
   - Shadow trading (is this useful or theater?)
   - Regime detection (is this signal or noise?)
-- [ ] For each assumption, answer:
+- [x] For each assumption, answer:
   - What problem does this solve?
   - What's the empirical evidence it works?
   - What would break if we removed it?
   - What's the simplest alternative?
-- [ ] Identify assumptions with weak evidence
-- [ ] Generate list: "Assumptions to test by removing"
-- [ ] Test: Audit covers ≥10 architectural decisions
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Identify assumptions with weak evidence
+- [x] Generate list: "Assumptions to test by removing"
+- [x] Test: Audit covers ≥10 architectural decisions (13 analyzed)
+- [x] Deliverable is markdown (no typecheck needed)
 
 #### US-RC-031D: Minimal viable strategy (MVS) benchmark
 **Persona Context:** "What's the simplest strategy that could beat 53% breakeven? Start there, THEN add complexity—only if it helps."

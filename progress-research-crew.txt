@@ -3038,3 +3038,88 @@ Created comprehensive analyzer to evaluate strategy performance across market re
 - Output: assumption_audit.md with elimination test list
 
 ---
+
+## Iteration 33 - US-RC-031C: Assumption archaeology
+**Persona:** Alex "Occam" Rousseau (First Principles Engineer)
+**Completed:** 2026-01-16 15:15
+**Files Changed:**
+- reports/alex_rousseau/assumption_audit.md (created)
+- PRD-research-crew.md (marked US-RC-031C complete)
+
+**Learnings:**
+- Pattern: Assumption archaeology methodology
+  - For each architectural decision: WHO decided? WHY? What evidence?
+  - Question folklore: "More agents = better" (not proven)
+  - Identify weak evidence: Multi-agent consensus has 0% evidence
+  - Map dependencies: Many assumptions depend on other assumptions
+  
+- Pattern: Classification by evidence strength
+  - 🔴 Weak/Harmful (remove): Multi-agent consensus, regime detection, contrarian fade
+  - 🟡 Questionable (test): Weighted voting, adaptive thresholds, recovery modes
+  - 🟢 Promising (deploy): ML Random Forest (67% test accuracy)
+  - ✅ Essential (keep): Tiered sizing, drawdown protection
+  
+- Key Finding: **Architectural decisions are circular dependencies**
+  - Multi-agent consensus → needs weighted voting → needs adaptive weights → needs regime detection
+  - Remove foundation (multi-agent) → entire stack collapses (good!)
+  - Minimal system: 1 agent/model + entry filter + sizing + halt
+  
+- Key Finding: **13 architectural assumptions analyzed**
+  - 5 weak/harmful (strong removal candidates)
+  - 4 questionable (need testing)
+  - 2 promising (deploy if evidence supports)
+  - 2 essential (keep and optimize)
+  
+- Key Finding: **Configuration space explosion = tuning impossibility**
+  - 68 parameters = 68^n combinations
+  - No way to find optimal configuration
+  - Target: <10 parameters (80% reduction)
+  
+- Key Finding: **First principles MVP design**
+  - 4 components (vs 26 current)
+  - 5 parameters (vs 68 current)
+  - 300-500 LOC (vs 3300+ current)
+  - Expected WR: 60-65% (if we pick right agent/model)
+  
+- Alex's Voice: Interrogation, skepticism, first principles
+  - "Who decided this?"
+  - "What's the evidence?"
+  - "What would break if we removed it?"
+  - "What's the simplest alternative?"
+  - Focus on questioning assumptions, not accepting them
+  
+- Pattern: Evidence dependencies mapped
+  - 12 research tasks (US-RC-017 to US-RC-031) will provide empirical evidence
+  - Once complete, data-driven decisions on each assumption
+  - Current audit identifies WHAT to test, later tasks provide EVIDENCE
+  
+- Testing Strategy: Removal over addition
+  - Test by DELETING components, not adding features
+  - If removal doesn't hurt WR → permanent deletion
+  - Simplification reduces maintenance burden
+
+**Implementation Notes:**
+- Created comprehensive assumption audit (13 architectural decisions)
+- Each assumption analyzed with:
+  - WHO decided and WHY
+  - What problem it solves
+  - Empirical evidence (or lack thereof)
+  - Simplest alternative
+  - Verdict (keep/test/remove)
+- Generated "Assumptions to Test by Removing" table
+  - Prioritized by evidence strength
+  - Test methods identified (shadow strategies, research tasks)
+- Designed First Principles MVS (Minimal Viable System)
+  - 4 components, 5 parameters, 300-500 LOC
+  - Migration path from current to MVS
+- Linked to evidence dependencies (12 future research tasks)
+
+**Next Steps for US-RC-031D:**
+- Minimal Viable Strategy benchmark
+- Design 5 ultra-simple baseline strategies (random, momentum-only, contrarian-only, etc.)
+- Backtest on last 200 trades from logs
+- Compare MVS win rates to current 56-60% system
+- If MVS beats current → current system is over-engineered
+- Generate reports/alex_rousseau/mvs_benchmark.csv
+
+---
