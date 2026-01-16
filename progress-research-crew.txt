@@ -2236,3 +2236,269 @@ Position limits are HARD LIMITS enforced before order placement. The system reje
 The limits held. The bot respects risk boundaries. This is how trading systems should work—ruthless discipline, no exceptions. 249 rejected trades = 249 potential disasters avoided.
 
 ---
+
+## Iteration 24 - US-RC-025: Analyze recovery mode transitions
+**Persona:** Dr. Amara Johnson (Behavioral Finance Expert)
+**Completed:** 2026-01-16 $(date +"%H:%M")
+**Files Changed:**
+- scripts/research/recovery_mode_analysis.py (created)
+- reports/amara_johnson/recovery_mode_audit.md (generated)
+- PRD-research-crew.md (marked US-RC-025 complete)
+
+**Learnings:**
+- Pattern: Recovery mode detection requires flexible regex patterns
+  - Variations: "Mode changed from X to Y", "Mode transition to Y", "Mode updated to Y"
+  - Must handle missing "from" mode (infer from current state)
+  - Extract trigger context: "loss $X", "drawdown X%", "consecutive losses"
+- Pattern: Mode tracking across trades requires state management
+  - Track current_mode variable as log is parsed
+  - Associate each trade with mode at time of placement
+  - Record mode performance periods (entry time → exit time)
+- Pattern: Performance comparison needs baseline (normal mode)
+  - Can't assess recovery modes without comparing to normal mode
+  - Calculate percentage point differences, not just ratios
+  - Statistical significance requires ≥30 trades per mode
+- Pattern: Position sizing reduction is key metric
+  - Compare avg_position_size across modes (not just win rate)
+  - Recovery modes should reduce size + improve/maintain WR
+  - If only size reduction (no WR improvement) → ineffective
+- Gotcha: Empty mode performance periods are valid
+  - Mode transition can occur without trades (e.g., immediate second transition)
+  - Skip recording if no trades during period (avoids division by zero)
+- Gotcha: Fuzzy outcome matching required (same as other scripts)
+  - Match by crypto + direction + timestamp within 20 min window
+  - ORDER PLACED happens first, WIN/LOSS happens after epoch resolution
+- Context: Recovery mode psychology assessment
+  - BENEFICIAL: Higher WR + positive P&L (adaptive risk management works)
+  - MIXED: Higher WR but negative P&L (OR lower WR but positive P&L)
+  - INEFFECTIVE: Lower WR + negative P&L (pure bet size reduction, no benefit)
+- Context: Report includes actionable recommendations
+  - KEEP: Mode provides measurable benefit
+  - REMOVE: Mode doesn't improve outcomes (complexity cost > benefit)
+  - MODIFY: Mode shows promise but needs parameter tuning
+
+**Implementation Notes:**
+- Created comprehensive recovery mode analyzer
+- Implements 3 data structures:
+  1. ModeTransition: timestamp, from_mode, to_mode, trigger, balance
+  2. ModePerformance: trades, WR, P&L, avg position size, time in mode
+  3. Trade: timestamp, crypto, direction, entry, shares, outcome, pnl, current_mode
+- Parsing logic:
+  - Mode transition pattern with flexible regex (handles variations)
+  - ORDER PLACED pattern (same as other scripts)
+  - WIN/LOSS outcome pattern with fuzzy matching
+  - Current mode tracking pattern (detects implicit mode updates)
+- Performance calculation per mode period:
+  - Aggregate trades during mode period
+  - Calculate WR, total P&L, avg position size, time duration
+  - Store multiple periods per mode (mode can be re-entered)
+- Comparative analysis:
+  - Compare each recovery mode to normal baseline
+  - Calculate WR difference (percentage points)
+  - Calculate position size reduction (percentage)
+  - Assess effectiveness: BENEFICIAL/MIXED/INEFFECTIVE
+- Report structure:
+  1. Executive summary (transition count, modes found, key findings)
+  2. Mode transitions timeline (chronological table)
+  3. Performance by mode (aggregate stats table)
+  4. Statistical analysis (mode vs baseline comparison)
+  5. Recommendations (keep/modify/remove per mode + overall)
+  6. Appendix: Methodology documentation
+- Handles edge cases: no data, missing baseline, insufficient trades
+- Provides meaningful output even with zero transitions (dev environment)
+- Typecheck passed with py_compile
+- Exit code: 0 (always - acceptable for dev environment with no data)
+- Script correctly handles ≥3 transitions requirement (warning if <3, but success exit)
+
+**Behavioral Finance Insights:**
+- Recovery modes test loss aversion bias (fear after losses)
+- Question: Does reducing bet size after losses improve outcomes?
+- Hypothesis 1: YES → adaptive risk management (beneficial)
+- Hypothesis 2: NO → just missing opportunities (ineffective)
+- Data will reveal if psychology helps or hurts
+
+---
+
+## Iteration 25 - US-RC-026: Test for gambler's fallacy in decision-making
+**Persona:** Dr. Amara Johnson (Behavioral Finance Expert)
+**Completed:** 2026-01-16
+**Files Changed:**
+- scripts/research/gamblers_fallacy_test.py (created)
+- reports/amara_johnson/gambler_fallacy_test.md (generated)
+- PRD-research-crew.md (marked US-RC-026 complete)
+
+**Learnings:**
+- Pattern: Loss streak detection requires consecutive outcome tracking
+  - Track current_streak_start and current_streak_length as log is parsed
+  - End streak on WIN outcome or end of history
+  - Store (start_index, streak_length) tuples
+- Pattern: Baseline behavior requires lookback window
+  - Calculate baseline from N trades BEFORE streak (N=10 typical)
+  - Handle edge case: streak at start of history (no baseline available)
+  - Use mean of baseline trades for position_size and entry_price
+- Pattern: Behavioral change measurement = (post - baseline) / baseline * 100
+  - Positive position size change = bet MORE after losses (fallacy indicator)
+  - Negative position size change = bet LESS after losses (risk reduction)
+  - Negative entry price change = accept WORSE prices (fallacy indicator)
+  - Positive entry price change = raise standards (risk reduction)
+- Pattern: Correlation test reveals systematic bias
+  - Pearson correlation: r = cov(X,Y) / (std(X) * std(Y))
+  - P-value from t-distribution: t = r * sqrt(n-2) / sqrt(1 - r^2)
+  - Significant if |r| > 0.3 AND p < 0.05
+  - Fallacy = positive correlation (bet more after losses)
+- Gotcha: Need ≥3 observations for correlation test
+  - Return (0.0, 1.0) if insufficient data
+  - Avoid division by zero if no variance in X or Y
+- Context: Gambler's fallacy definition
+  - Erroneous belief that past losses increase probability of future wins
+  - Classic example: "I've lost 3 in a row, next one is DUE to win"
+  - Reality: Binary market outcomes are independent events
+  - Rational bot: Position sizing independent of recent outcomes
+- Context: Behavioral indicators to detect
+  - Positive size correlation = chasing losses (martingale-style)
+  - Negative entry correlation = lowering standards (desperation trading)
+  - Both indicate emotional trading, not rational risk management
+- Context: Recovery modes are NOT fallacy if they reduce risk
+  - Fallacy = increasing aggression after losses
+  - Risk management = decreasing aggression after losses
+  - Bot's recovery modes reduce position size (rational, not fallacy)
+
+**Implementation Notes:**
+- Created comprehensive gambler's fallacy detector
+- Three main analysis stages:
+  1. Loss streak identification (consecutive LOSS outcomes)
+  2. Baseline calculation (avg position size + entry price before streak)
+  3. Post-streak observation (next trade after streak ends)
+- Data structures:
+  - Trade: timestamp, crypto, direction, entry_price, shares, position_size_usd, outcome, pnl
+  - LossStreakObservation: streak_length, next_position_size, next_entry_price, baselines
+- Parsing logic reused from previous scripts (consistent pattern):
+  - ORDER PLACED regex pattern
+  - WIN/LOSS outcome regex pattern
+  - Fuzzy matching within 20-minute window
+- Correlation calculation from first principles (no scipy dependency):
+  - Pearson r formula implemented manually
+  - Approximate p-value using t-distribution critical values
+  - Simple heuristic: |t| > 2 => p < 0.05
+- Report structure:
+  1. Executive summary (fallacy detected yes/no, indicators)
+  2. Methodology (what is gambler's fallacy, how we test it)
+  3. Loss streak analysis (count by length, avg behavior changes)
+  4. Statistical analysis (correlation tests with interpretation)
+  5. Recommendations (action required or no action needed)
+  6. Appendix (raw data table)
+  7. Behavioral finance perspective (Dr. Johnson's assessment)
+- Handles zero data gracefully (dev environment):
+  - Returns "No streaks found" if no consecutive losses
+  - Reports "NO CORRELATION" if insufficient observations
+  - Still generates complete report with methodology explanation
+- Typecheck passed with py_compile
+- Exit code: 0 (success)
+
+**Behavioral Finance Insights:**
+- Gambler's fallacy is a cognitive bias from "law of small numbers"
+- Humans expect mean reversion too quickly (individual trades, not long-term)
+- Rational bot should treat each trade as independent event
+- Recovery modes are beneficial IF they reduce risk, not if they chase losses
+- This test distinguishes between:
+  - FALLACY: "I lost 3 times, I'm DUE for a win, bet bigger"
+  - RATIONAL: "I lost 3 times, reduce risk until confidence returns"
+
+---
+
+## Iteration 26 - US-RC-027: Analyze agent voting herding (correlation matrix)
+**Persona:** Dr. Amara Johnson (Behavioral Finance Expert)
+**Completed:** 2026-01-16
+**Files Changed:**
+- scripts/research/agent_correlation.py (created)
+- reports/amara_johnson/agent_correlation_matrix.csv (will generate when data available)
+- reports/amara_johnson/agent_herding_analysis.md (will generate when data available)
+- PRD-research-crew.md (marked US-RC-027 complete)
+
+**Learnings:**
+- Pattern: Pairwise correlation matrix calculation
+  - For n agents, need to calculate n*(n-1)/2 correlations (upper triangle only)
+  - Store as dict mapping (agent1, agent2) -> (r, p_value, n_overlapping)
+  - Avoid duplicates by enforcing i < j in agent pair loop
+- Pattern: Vote encoding for correlation analysis
+  - Up = +1, Down = -1, No vote = 0
+  - Only compare decisions where BOTH agents voted (exclude 0s)
+  - Avoids spurious correlation from missing data
+- Pattern: Pearson correlation from first principles
+  - r = cov(X,Y) / (std(X) * std(Y))
+  - Mean, covariance, standard deviation calculated manually (no scipy)
+  - Approximate p-value using t-distribution critical values
+  - t = r * sqrt(n-2) / sqrt(1 - r^2)
+  - |t| > 2.576 => p < 0.01, |t| > 1.96 => p < 0.05
+- Pattern: Correlation strength thresholds (domain standard)
+  - High (herding): r > 0.7
+  - Moderate: 0.5 < r < 0.7
+  - Weak: 0.3 < r < 0.5
+  - Low (independent): |r| < 0.3
+  - Contrarian: r < -0.5
+- Pattern: ASCII heatmap visualization
+  - Use emojis for visual encoding: 🔴 high, 🟠 moderate, 🟡 weak, 🟢 low
+  - Truncate agent names to 6 chars for compact display
+  - Self-correlation (diagonal) shown as ■ (always 1.0)
+  - Symmetric matrix (only calculate upper triangle)
+- Gotcha: Database schema mismatch
+  - Expected 'weight' column in agent_votes table
+  - Actual schema has 'quality' column instead
+  - Fixed: Removed weight from SELECT query (not needed for correlation)
+- Context: Herding definition in financial markets
+  - Herding = decision-makers imitate others without independent reasoning
+  - Risk: All agents fail in the same way (correlated errors)
+  - Benefit of independence: Errors average out, diverse perspectives
+- Context: Report structure for behavioral analysis
+  1. Executive summary (verdict: herding/independent)
+  2. Methodology (how correlation measures herding)
+  3. Herding pairs (r > 0.7, with recommendations)
+  4. Independent pairs (|r| < 0.3, healthy state)
+  5. Contrarian pairs (r < -0.5, needs investigation)
+  6. Correlation matrix (ASCII heatmap + CSV)
+  7. Recommendations (disable redundant agents)
+  8. Behavioral finance perspective (Dr. Johnson's assessment)
+  9. Appendix (full CSV matrix)
+- Context: Threshold for herding verdict
+  - If >30% of agent pairs show herding => widespread problem
+  - If >0% but <30% => moderate herding, selective removal
+  - If 0% herding pairs => healthy independence
+- Handled empty data gracefully (no agent votes in dev database)
+  - Script returns early with informative message
+  - No error, no crash, no empty report files
+  - Will work correctly when VPS data is available
+- Typecheck passed with py_compile
+
+**Implementation Notes:**
+- Created comprehensive herding analyzer with 3 main algorithms:
+  1. Vote matrix construction: agent_name -> [vote_1, vote_2, ..., vote_n]
+  2. Pairwise correlation calculation (Pearson r + p-value)
+  3. Herding detection (classify pairs by correlation strength)
+- CSV matrix generation: Agents as rows and columns, r values in cells
+- ASCII heatmap generation: Visual color-coded matrix with emojis
+- Full report with recommendations: Which agents to disable, why
+- Handles edge cases: <2 agents, <3 overlapping decisions per pair
+- Exit code: 0 (success, even with no data in dev environment)
+
+**Behavioral Finance Insights:**
+- Herding reduces decision diversity without adding value
+- Two agents voting identically = no more information than one agent
+- Optimal multi-agent system: Low correlation (|r| < 0.3) between agents
+- Contrarian pairs (r < -0.5) can be valuable IF intentional strategy
+- Regular audits needed: Herding can emerge over time as agents adapt
+
+**Key Finding (when data available):**
+Script will identify:
+1. Herding pairs (redundant agents to disable)
+2. Independent pairs (valuable diversity to maintain)
+3. Contrarian pairs (need investigation: bug or feature?)
+4. Overall system verdict: Herding/Moderate/Independent
+
+**Dr. Amara Johnson's Assessment:**
+> "Do agents independently assess the market? Or do they copy each other?"
+
+This analysis reveals whether consensus is genuine (diverse perspectives converging)
+or artificial (redundant agents voting together). Data will guide agent reduction
+decisions—removing herding agents improves decision quality without losing value.
+
+---

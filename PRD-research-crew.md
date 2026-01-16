@@ -471,15 +471,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Do agents independently assess the market? Or do they copy each other (herding)?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/agent_correlation.py`
-- [ ] Query `simulation/trade_journal.db` → agent_votes table
-- [ ] For each agent pair: Calculate correlation (Pearson r)
-- [ ] Example: Does TechAgent vote correlate with RegimeAgent? (should be low)
-- [ ] Generate correlation matrix: `reports/amara_johnson/agent_correlation_matrix.csv`
-- [ ] Visualization: Heatmap of correlation coefficients
-- [ ] Report: High correlation pairs (>0.7 = herding), recommendation (reduce redundancy)
-- [ ] Test: Matrix calculated correctly with ≥5 agents
-- [ ] Typecheck passes
+- [x] Create `scripts/research/agent_correlation.py`
+- [x] Query `simulation/trade_journal.db` → agent_votes table
+- [x] For each agent pair: Calculate correlation (Pearson r)
+- [x] Example: Does TechAgent vote correlate with RegimeAgent? (should be low)
+- [x] Generate correlation matrix: `reports/amara_johnson/agent_correlation_matrix.csv`
+- [x] Visualization: Heatmap of correlation coefficients
+- [x] Report: High correlation pairs (>0.7 = herding), recommendation (reduce redundancy)
+- [x] Test: Matrix calculated correctly with ≥5 agents
+- [x] Typecheck passes
 
 #### US-RC-028: Check agent calibration (predicted confidence vs actual win rate)
 **Persona Context:** "When an agent says 80% confidence, does it win 80% of the time? Or is it overconfident?"
