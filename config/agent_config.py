@@ -295,9 +295,9 @@ DEPLOYMENT_MODES = {
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.55,
-        'MIN_CONFIDENCE': 0.40,
-        'description': 'Data collection mode - 55% consensus, need 100+ trades to analyze'
+        'CONSENSUS_THRESHOLD': 0.50,
+        'MIN_CONFIDENCE': 0.35,
+        'description': 'Data collection mode - 50% consensus, need 100+ trades to analyze'
     },
     'aggressive': {
         'AGENT_SYSTEM_ENABLED': True,
