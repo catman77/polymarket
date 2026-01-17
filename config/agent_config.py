@@ -308,8 +308,9 @@ DEPLOYMENT_MODES = {
 }
 
 # Current deployment mode
-# Jan 17, 2026: Changed to 'moderate' for data collection - need 100+ trades to analyze
-CURRENT_MODE = 'moderate'  # Data collection mode (0.40/0.40 thresholds)
+# Jan 17, 2026: US-TO-QUICK-001 - Conservative mode with cheap entries
+# Focus on quality signals at low entry prices for guaranteed profit zones
+CURRENT_MODE = 'conservative'  # 0.82 consensus, 0.65 confidence
 
 
 def apply_mode(mode_name: str):
