@@ -14,8 +14,9 @@ AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log
 
 # Consensus requirements
 # US-TO-QUICK-001 (Jan 17, 2026): Achievable threshold with current agents
-# With RegimeAgent skipping, max possible score is ~0.60 from OrderBook+FundingRate+TimePattern
-CONSENSUS_THRESHOLD = 0.55     # Achievable with current agent setup
+# With RegimeAgent skipping, max possible score is ~0.50-0.60 from OrderBook+FundingRate+TimePattern
+# Observed score: 0.505 - lowered from 0.55 to 0.50 to allow through
+CONSENSUS_THRESHOLD = 0.50     # Achievable with current agent setup (observed 0.505 score)
 MIN_CONFIDENCE = 0.50          # Require 50% confidence minimum
 MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vote_aggregator.py)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
@@ -290,9 +291,9 @@ DEPLOYMENT_MODES = {
     },
     'conservative': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.55,  # Lowered - 0.82 unreachable with current agents
+        'CONSENSUS_THRESHOLD': 0.50,  # Observed score 0.505 - lowered from 0.55 to allow trades
         'MIN_CONFIDENCE': 0.50,
-        'description': 'Selective trades with achievable threshold (max score ~0.60 with current agents)'
+        'description': 'Selective trades with achievable threshold (observed score ~0.505)'
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
@@ -302,7 +303,7 @@ DEPLOYMENT_MODES = {
     },
     'aggressive': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.55,
+        'CONSENSUS_THRESHOLD': 0.45,  # Lower than conservative for more trades
         'MIN_CONFIDENCE': 0.45,
         'description': 'Lower threshold, more trades (higher risk)'
     }

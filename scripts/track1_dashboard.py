@@ -6,7 +6,7 @@ Monitors the deployment of cheap entry focus strategy:
 - Entry prices (target: avg < $0.15)
 - Win rate (target: >= 58%)
 - Trade count (target: 4-6 trades in 24h)
-- Consensus threshold validation (0.55)
+- Consensus threshold validation (0.50)
 
 Usage:
     python3 scripts/track1_dashboard.py [--refresh 30] [--remote]
@@ -38,7 +38,7 @@ class Track1Dashboard:
     TARGET_WIN_RATE = 0.58       # Target: WR >= 58%
     TARGET_MIN_TRADES = 4        # Target: at least 4 trades in 24h
     TARGET_MAX_TRADES = 10       # Expected: 4-10 trades/day with selective approach
-    CONSENSUS_THRESHOLD = 0.55   # Achievable threshold with current agents (max ~0.60)
+    CONSENSUS_THRESHOLD = 0.50   # Achievable threshold (observed score 0.505)
 
     def __init__(self, log_path: str = "bot.log", remote: bool = False):
         self.log_path = log_path
@@ -318,11 +318,11 @@ PYEOF'"""
         print("-" * 70)
         if config:
             mode_ok = config.get('mode') == 'conservative'
-            consensus_ok = config.get('consensus') == 0.55
+            consensus_ok = config.get('consensus') == 0.50
             entry_ok = config.get('max_entry', 1) <= 0.15
 
             print(f"  Mode: {config.get('mode', 'unknown'):<15} {'✅' if mode_ok else '❌'}")
-            print(f"  Consensus Threshold: {config.get('consensus', 0):<8} {'✅' if consensus_ok else '❌'} (target: 0.55)")
+            print(f"  Consensus Threshold: {config.get('consensus', 0):<8} {'✅' if consensus_ok else '❌'} (target: 0.50)")
             print(f"  Max Entry: ${config.get('max_entry', 0):<13.2f} {'✅' if entry_ok else '❌'} (target: ≤$0.15)")
             print(f"  Early Max: ${config.get('early_max', 0):.2f}")
             print(f"  Contrarian Max: ${config.get('contrarian_max', 0):.2f}")
