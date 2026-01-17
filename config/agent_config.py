@@ -39,6 +39,7 @@ AGENT_WEIGHTS = {
     'RiskAgent': 1.0,              # Risk management (veto)
     'GamblerAgent': 1.0,           # Probability gating (veto - blocks trades <60% win prob)
     'StreakAgent': 1.0,            # Mean reversion after 3+ consecutive same direction (data-validated)
+    'IntraEpochMomentumAgent': 2.0,  # HIGH PRIORITY: 74-80% accuracy on early momentum (data-validated)
 }
 
 # =============================================================================
@@ -67,6 +68,7 @@ AGENT_ENABLED = {
     'RiskAgent': True,  # ESSENTIAL: Position sizing and risk management
     'GamblerAgent': True,  # KEPT: Probability gating (60% threshold)
     'StreakAgent': True,  # NEW: Mean reversion after 3+ consecutive (data-validated pattern)
+    'IntraEpochMomentumAgent': True,  # HIGH PRIORITY: 74-80% accuracy (validated on 2,688 epochs)
 }
 
 def get_enabled_agents():

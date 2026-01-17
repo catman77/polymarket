@@ -16,6 +16,7 @@ from agents.gambler_agent import GamblerAgent
 from agents.voting.orderbook_agent import OrderBookAgent
 from agents.voting.funding_rate_agent import FundingRateAgent
 from agents.voting.streak_agent import StreakAgent
+from agents.voting.intra_epoch_momentum_agent import IntraEpochMomentumAgent
 from coordinator import DecisionEngine
 from config import agent_config
 from config.agent_config import get_enabled_agents
@@ -195,6 +196,18 @@ class AgentSystemWrapper:
         else:
             self.streak_agent = None
 
+        # Add IntraEpochMomentumAgent if configured and enabled (momentum within epochs - 74-80% accuracy)
+        if ('IntraEpochMomentumAgent' in agent_weights and agent_weights['IntraEpochMomentumAgent'] > 0
+            and 'IntraEpochMomentumAgent' in enabled_agents):
+            self.intra_epoch_momentum_agent = IntraEpochMomentumAgent(
+                name="IntraEpochMomentumAgent",
+                weight=agent_weights.get('IntraEpochMomentumAgent', 1.0)
+            )
+            agents.append(self.intra_epoch_momentum_agent)
+            agent_names.append("IntraEpochMomentum")
+        else:
+            self.intra_epoch_momentum_agent = None
+
         # Build summary
         agent_count = f"{len(agents)} VOTING AGENTS"
         agent_list = ", ".join(agent_names) if agent_names else "None"
@@ -221,7 +234,7 @@ class AgentSystemWrapper:
         log.info(f"  Min Confidence: {min_confidence}")
         log.info(f"  Adaptive Weights: {adaptive_weights}")
         log.info(f"  Enabled Agents: {full_summary}")
-        log.info(f"  Disabled Agents: {', '.join([a for a in ['TechAgent', 'SentimentAgent', 'RegimeAgent', 'CandlestickAgent', 'TimePatternAgent', 'OrderBookAgent', 'FundingRateAgent', 'StreakAgent', 'RiskAgent', 'GamblerAgent', 'OnChainAgent', 'SocialSentimentAgent'] if a not in enabled_agents]) or 'None'}")
+        log.info(f"  Disabled Agents: {', '.join([a for a in ['TechAgent', 'SentimentAgent', 'RegimeAgent', 'CandlestickAgent', 'TimePatternAgent', 'OrderBookAgent', 'FundingRateAgent', 'StreakAgent', 'IntraEpochMomentumAgent', 'RiskAgent', 'GamblerAgent', 'OnChainAgent', 'SocialSentimentAgent'] if a not in enabled_agents]) or 'None'}")
         log.info("=" * 60)
 
     def make_decision(self,
