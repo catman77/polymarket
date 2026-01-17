@@ -199,45 +199,64 @@ async def markets_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show currently available markets."""
     try:
         import requests
+        import time
 
-        # Query Polymarket Gamma API for active 15-min markets
-        response = requests.get(
-            "https://gamma-api.polymarket.com/markets",
-            params={"closed": "false", "limit": 50},
-            timeout=10
-        )
+        cryptos = ['btc', 'eth', 'sol', 'xrp']
+        current_epoch = (int(time.time()) // 900) * 900
+        
+        active_markets = []
+        
+        # Check current and next epoch for each crypto
+        for crypto in cryptos:
+            for offset in [0, 1, 2]:  # Current, next, +2 epochs
+                epoch = current_epoch + (900 * offset)
+                slug = f"{crypto}-updown-15m-{epoch}"
+                
+                try:
+                    resp = requests.get(
+                        f"https://gamma-api.polymarket.com/events?slug={slug}",
+                        timeout=3
+                    )
+                    if resp.status_code == 200 and resp.json():
+                        event = resp.json()[0]
+                        markets = event.get("markets", [])
+                        if markets:
+                            cid = markets[0].get("conditionId")
+                            # Check if accepting orders
+                            clob = requests.get(
+                                f"https://clob.polymarket.com/markets/{cid}",
+                                timeout=3
+                            )
+                            if clob.status_code == 200:
+                                data = clob.json()
+                                if data.get("accepting_orders"):
+                                    active_markets.append({
+                                        "crypto": crypto.upper(),
+                                        "epoch": epoch,
+                                        "title": event.get("title", slug),
+                                        "condition_id": cid
+                                    })
+                except:
+                    continue
 
-        if response.status_code != 200:
-            await update.message.reply_text("❌ Failed to fetch markets")
-            return
-
-        markets = response.json()
-
-        # Filter for 15-minute markets
-        fifteen_min_markets = []
-        for market in markets:
-            question = market.get('question', '')
-            if '15-minute' in question.lower() or '15 min' in question.lower():
-                fifteen_min_markets.append(market)
-
-        if not fifteen_min_markets:
-            await update.message.reply_text("📊 No active 15-minute markets found")
+        if not active_markets:
+            await update.message.reply_text(
+                "📊 No active 15-minute markets found\n\n"
+                "This could mean:\n"
+                "• Markets are between epochs\n"
+                "• API is temporarily unavailable\n"
+                "• Markets are paused"
+            )
             return
 
         lines = ["📊 *ACTIVE 15-MIN MARKETS*\n"]
 
-        for market in fifteen_min_markets[:10]:  # Limit to 10
-            question = market.get('question', 'Unknown')
-            # Extract crypto from question
-            crypto = "?"
-            for c in ['BTC', 'ETH', 'SOL', 'XRP']:
-                if c in question.upper():
-                    crypto = c
-                    break
+        for market in active_markets:
+            from datetime import datetime
+            epoch_time = datetime.utcfromtimestamp(market['epoch']).strftime('%H:%M')
+            lines.append(f"• {market['crypto']}: Epoch {epoch_time} UTC")
 
-            lines.append(f"• {crypto}: {question[:50]}...")
-
-        lines.append(f"\n_Total: {len(fifteen_min_markets)} markets_")
+        lines.append(f"\n_Total: {len(active_markets)} markets_")
 
         await update.message.reply_text("\n".join(lines), parse_mode='Markdown')
 
