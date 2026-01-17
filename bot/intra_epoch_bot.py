@@ -538,7 +538,7 @@ def run_bot():
     log.info("=" * 60)
     log.info("INTRA-EPOCH MOMENTUM BOT STARTING")
     log.info("=" * 60)
-    log.info(f"Max Entry Price: ${MAX_ENTRY_PRICE}")
+    log.info(f"Edge Buffer: {EDGE_BUFFER:.0%} (max entry = accuracy - {EDGE_BUFFER:.0%})")
     log.info(f"Min Pattern Accuracy: {MIN_PATTERN_ACCURACY:.0%}")
     log.info(f"Trading Window: minutes 3-10")
     log.info(f"Position Size: ${BASE_POSITION_USD}-${MAX_POSITION_USD}")
