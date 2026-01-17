@@ -457,8 +457,8 @@ EXCHANGE_SYMBOLS = {
     "xrp": {"binance": "XRPUSDT", "kraken": "XRPUSD", "coinbase": "XRP-USD"},
 }
 
-# State directory
-STATE_DIR = "./v12_state"
+# State directory - use 'state/' for Docker/VPS compatibility
+STATE_DIR = os.getenv("STATE_DIR", "state")
 
 # Logging
 logging.basicConfig(
