@@ -11,14 +11,18 @@ when streaks exceed thresholds.
 """
 
 import os
+import sys
 import json
 import time
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Dict, List, Tuple
-from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 import requests
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from base_agent import BaseAgent, Vote
 
 logger = logging.getLogger(__name__)
 
@@ -32,20 +36,7 @@ MEAN_REVERSION_PROB_AFTER_UP = 0.591  # 59.1% chance of DOWN after 3+ UPs
 MEAN_REVERSION_PROB_AFTER_DOWN = 0.566  # 56.6% chance of UP after 5+ DOWNs
 
 
-@dataclass
-class Vote:
-    direction: str          # "Up", "Down", or "Neutral"
-    confidence: float       # 0.0 to 1.0
-    quality: float          # Signal quality 0.0 to 1.0
-    agent_name: str
-    reasoning: str
-    details: Dict
-
-    def weighted_score(self, weight: float = 1.0) -> float:
-        return self.confidence * self.quality * weight
-
-
-class StreakAgent:
+class StreakAgent(BaseAgent):
     """
     Tracks consecutive epoch outcomes and votes for mean reversion.
 
@@ -55,10 +46,17 @@ class StreakAgent:
     - Otherwise, abstain (no edge)
     """
 
-    def __init__(self):
-        self.name = "StreakAgent"
+    def __init__(self, name: str = "StreakAgent", weight: float = 1.0):
+        """
+        Initialize the StreakAgent.
+
+        Args:
+            name: Agent identifier
+            weight: Base voting weight
+        """
+        super().__init__(name=name, weight=weight)
         self.state_file = "state/streak_history.json"
-        self.streak_history: Dict[str, List[Dict]] = {}  # crypto -> list of epoch outcomes
+        self.streak_history: Dict[str, List[Dict]] = {}
         self._load_state()
 
     def _load_state(self):
@@ -183,21 +181,23 @@ class StreakAgent:
             logger.warning(f"[StreakAgent] Binance fetch error: {e}")
             return ("None", 0)
 
-    def vote(self, market_context: Dict) -> Vote:
+    def analyze(self, crypto: str, epoch: int, data: dict) -> Vote:
         """
-        Generate a vote based on current streak status.
+        Analyze streak patterns and return a vote.
+
+        This is the main interface method called by the coordinator.
 
         Args:
-            market_context: Dict containing:
-                - crypto: str (e.g., "BTC")
-                - current_price: float
-                - epoch_start: int (unix timestamp)
-        """
-        crypto = market_context.get('crypto', '')
+            crypto: Crypto symbol (BTC, ETH, SOL, XRP)
+            epoch: Current epoch timestamp
+            data: Market data context (not used by this agent)
 
+        Returns:
+            Vote with direction, confidence, and quality
+        """
         if not crypto:
             return Vote(
-                direction="Neutral",
+                direction="Skip",
                 confidence=0.0,
                 quality=0.0,
                 agent_name=self.name,
@@ -205,15 +205,18 @@ class StreakAgent:
                 details={}
             )
 
+        # Normalize crypto to uppercase
+        crypto_upper = crypto.upper()
+
         # Get current streak (try Binance first for most accurate data)
-        streak_dir, streak_len = self.get_streak_from_binance(crypto)
+        streak_dir, streak_len = self.get_streak_from_binance(crypto_upper)
 
         # Fallback to local state if Binance fails
         if streak_dir == "None":
-            streak_dir, streak_len = self.get_current_streak(crypto)
+            streak_dir, streak_len = self.get_current_streak(crypto_upper)
 
         details = {
-            'crypto': crypto,
+            'crypto': crypto_upper,
             'streak_direction': streak_dir,
             'streak_length': streak_len,
             'up_threshold': STREAK_THRESHOLD_UP,
@@ -250,9 +253,9 @@ class StreakAgent:
             )
 
         else:
-            # No streak signal
+            # No streak signal - abstain
             return Vote(
-                direction="Neutral",
+                direction="Skip",
                 confidence=0.0,
                 quality=0.0,
                 agent_name=self.name,
@@ -277,8 +280,8 @@ if __name__ == "__main__":
         streak_dir, streak_len = agent.get_streak_from_binance(crypto)
         print(f"Current streak: {streak_len} consecutive {streak_dir}s")
 
-        # Get vote
-        vote = agent.vote({'crypto': crypto})
+        # Get vote via analyze method
+        vote = agent.analyze(crypto, 0, {})
         print(f"Vote: {vote.direction}")
         print(f"Confidence: {vote.confidence:.2f}")
         print(f"Quality: {vote.quality:.2f}")

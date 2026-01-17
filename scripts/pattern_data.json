@@ -1,99 +1,99 @@
 {
-  "generated_at": "2026-01-17T03:08:54.232465+00:00",
+  "generated_at": "2026-01-17T03:39:08.442592+00:00",
   "epochs_analyzed": 764,
-  "baseline_up_pct": 50.0,
+  "baseline_up_pct": 50.39267015706807,
   "recommendations": [
     {
-      "condition": "pre_momentum_1m > 0.0477",
+      "condition": "pre_momentum_1m > 0.0474",
       "prediction": "Up",
       "accuracy": 62.31884057971014,
       "samples": 138,
-      "edge": 12.318840579710141
+      "edge": 11.926170422642073
     },
     {
-      "condition": "price_range < 0.1334",
-      "prediction": "Down",
-      "accuracy": 66.23376623376623,
-      "samples": 77,
-      "edge": 16.233766233766232
-    },
-    {
-      "condition": "pre_momentum_1m < -0.0558",
+      "condition": "pre_momentum_1m < -0.0545",
       "prediction": "Down",
       "accuracy": 59.55056179775281,
       "samples": 89,
-      "edge": 9.550561797752813
+      "edge": 9.943231954820881
+    },
+    {
+      "condition": "price_range < 0.1326",
+      "prediction": "Down",
+      "accuracy": 63.63636363636363,
+      "samples": 77,
+      "edge": 14.0290337934317
     },
     {
       "condition": "pre_momentum_1m > 0.0340",
       "prediction": "Up",
       "accuracy": 65.45454545454545,
       "samples": 55,
-      "edge": 15.454545454545453
+      "edge": 15.061875297477386
     },
     {
       "condition": "Hour == 16 UTC",
       "prediction": "Up",
       "accuracy": 78.125,
       "samples": 32,
-      "edge": 28.125
+      "edge": 27.732329842931932
     },
     {
       "condition": "pre_momentum_60m > 0.4898",
       "prediction": "Down",
       "accuracy": 62.0,
       "samples": 50,
-      "edge": 12.0
+      "edge": 12.392670157068068
     },
     {
       "condition": "Hour == 3 UTC",
       "prediction": "Down",
-      "accuracy": 75.0,
-      "samples": 32,
-      "edge": 25.0
+      "accuracy": 82.14285714285714,
+      "samples": 28,
+      "edge": 32.53552729992521
     },
     {
       "condition": "Hour == 10 UTC",
       "prediction": "Down",
       "accuracy": 75.0,
       "samples": 32,
-      "edge": 25.0
+      "edge": 25.392670157068068
     },
     {
       "condition": "Hour == 4 UTC",
       "prediction": "Up",
       "accuracy": 71.875,
       "samples": 32,
-      "edge": 21.875
+      "edge": 21.482329842931932
     },
     {
       "condition": "Hour == 5 UTC",
       "prediction": "Up",
       "accuracy": 71.875,
       "samples": 32,
-      "edge": 21.875
+      "edge": 21.482329842931932
     }
   ],
   "rules": [
     {
-      "feature": "price_range",
-      "threshold": 0.1333973159584689,
-      "operator": "<",
-      "prediction": "Down",
-      "accuracy": 66.23376623376623,
-      "samples": 77
-    },
-    {
       "feature": "pre_momentum_1m",
-      "threshold": 0.033980977157103666,
+      "threshold": 0.03395091699426516,
       "operator": ">",
       "prediction": "Up",
       "accuracy": 65.45454545454545,
       "samples": 55
     },
     {
+      "feature": "price_range",
+      "threshold": 0.13264836495826904,
+      "operator": "<",
+      "prediction": "Down",
+      "accuracy": 63.63636363636363,
+      "samples": 77
+    },
+    {
       "feature": "pre_momentum_1m",
-      "threshold": 0.04774936298566587,
+      "threshold": 0.04737563976399501,
       "operator": ">",
       "prediction": "Up",
       "accuracy": 62.31884057971014,
@@ -109,7 +109,7 @@
     },
     {
       "feature": "pre_momentum_1m",
-      "threshold": -0.05575307266148923,
+      "threshold": -0.05454228157339563,
       "operator": "<",
       "prediction": "Down",
       "accuracy": 59.55056179775281,
@@ -117,40 +117,6 @@
     }
   ],
   "data": [
-    {
-      "crypto": "BTC",
-      "epoch_start_ms": 1768445100000,
-      "epoch_dt": "2026-01-15 02:45 UTC",
-      "hour_of_day": 2,
-      "pre_momentum_1m": -0.04924979195492848,
-      "pre_momentum_5m": -0.025056600607448274,
-      "pre_momentum_15m": -0.283134721978119,
-      "pre_momentum_60m": -0.21555499036025236,
-      "pre_volatility": 0.06981622248883826,
-      "volume_ratio": 0.7882880069219644,
-      "rsi": 29.467275889820314,
-      "price_range": 0.5414122294392923,
-      "trend_strength": -0.131629459073832,
-      "actual_direction": "Up",
-      "epoch_change_pct": 0.016475424055312885
-    },
-    {
-      "crypto": "BTC",
-      "epoch_start_ms": 1768446000000,
-      "epoch_dt": "2026-01-15 03:00 UTC",
-      "hour_of_day": 3,
-      "pre_momentum_1m": 0.001297489275213149,
-      "pre_momentum_5m": 0.13745087253864324,
-      "pre_momentum_15m": 0.06576798980950029,
-      "pre_momentum_60m": -0.1128356778471431,
-      "pre_volatility": 0.04324599694031952,
-      "volume_ratio": 0.9407389691805059,
-      "rsi": 57.47109143274733,
-      "price_range": 0.19780745841132952,
-      "trend_strength": 0.13520700809504888,
-      "actual_direction": "Down",
-      "epoch_change_pct": -0.043585255208853445
-    },
     {
       "crypto": "BTC",
       "epoch_start_ms": 1768446900000,
@@ -3365,38 +3331,38 @@
       "epoch_change_pct": -0.028976366053049082
     },
     {
-      "crypto": "ETH",
-      "epoch_start_ms": 1768445100000,
-      "epoch_dt": "2026-01-15 02:45 UTC",
+      "crypto": "BTC",
+      "epoch_start_ms": 1768617000000,
+      "epoch_dt": "2026-01-17 02:30 UTC",
       "hour_of_day": 2,
-      "pre_momentum_1m": -0.08440319405800692,
-      "pre_momentum_5m": -0.061507846773098264,
-      "pre_momentum_15m": -0.27018976468216654,
-      "pre_momentum_60m": -0.41102187609853214,
-      "pre_volatility": 0.09479255599688598,
-      "volume_ratio": 0.6949537902161799,
-      "rsi": 33.92296718972885,
-      "price_range": 0.6293349745520627,
-      "trend_strength": -0.22174554472464372,
-      "actual_direction": "Down",
-      "epoch_change_pct": -0.04280447698656702
+      "pre_momentum_1m": -0.035008809920842494,
+      "pre_momentum_5m": -0.003884080560446675,
+      "pre_momentum_15m": -0.019774175556470392,
+      "pre_momentum_60m": -0.218968055426649,
+      "pre_volatility": 0.0136957892670706,
+      "volume_ratio": 0.8102548565751774,
+      "rsi": 41.20119559125868,
+      "price_range": 0.03898928519013882,
+      "trend_strength": -0.0023725305473811555,
+      "actual_direction": "Up",
+      "epoch_change_pct": 0.025480033119844134
     },
     {
-      "crypto": "ETH",
-      "epoch_start_ms": 1768446000000,
-      "epoch_dt": "2026-01-15 03:00 UTC",
-      "hour_of_day": 3,
-      "pre_momentum_1m": 0.05189679778653519,
-      "pre_momentum_5m": 0.13468094808138778,
-      "pre_momentum_15m": 0.04163385737687554,
-      "pre_momentum_60m": -0.3024608770162926,
-      "pre_volatility": 0.058801159581653654,
-      "volume_ratio": 0.5451902666515718,
-      "rsi": 51.96078431372472,
-      "price_range": 0.21139991375125436,
-      "trend_strength": 0.1320872499615796,
+      "crypto": "BTC",
+      "epoch_start_ms": 1768617900000,
+      "epoch_dt": "2026-01-17 02:45 UTC",
+      "hour_of_day": 2,
+      "pre_momentum_1m": 1.0491575416813305e-05,
+      "pre_momentum_5m": -0.016154414382541758,
+      "pre_momentum_15m": 0.06051002688098045,
+      "pre_momentum_60m": -0.09240824739415607,
+      "pre_volatility": 0.013768201556722483,
+      "volume_ratio": 0.3813525491654916,
+      "rsi": 84.33086068490223,
+      "price_range": 0.17133790024568923,
+      "trend_strength": -0.018706477015321188,
       "actual_direction": "Up",
-      "epoch_change_pct": 0.10530190569293427
+      "epoch_change_pct": 0.059581650572235224
     },
     {
       "crypto": "ETH",
@@ -6612,38 +6578,38 @@
       "epoch_change_pct": -0.0644961089375754
     },
     {
-      "crypto": "SOL",
-      "epoch_start_ms": 1768445100000,
-      "epoch_dt": "2026-01-15 02:45 UTC",
+      "crypto": "ETH",
+      "epoch_start_ms": 1768617000000,
+      "epoch_dt": "2026-01-17 02:30 UTC",
       "hour_of_day": 2,
-      "pre_momentum_1m": -0.10350538227986286,
-      "pre_momentum_5m": -0.013813108640086893,
-      "pre_momentum_15m": -0.13795957784368396,
-      "pre_momentum_60m": -0.2686690548360336,
-      "pre_volatility": 0.08891849667281106,
-      "volume_ratio": 1.0126964736943795,
-      "rsi": 39.71631205673784,
-      "price_range": 0.580230710782623,
-      "trend_strength": -0.15541894038820459,
-      "actual_direction": "Down",
-      "epoch_change_pct": -0.24841291747169833
+      "pre_momentum_1m": -0.014914515476085997,
+      "pre_momentum_5m": 0.0030443253774935777,
+      "pre_momentum_15m": -0.052637504069518566,
+      "pre_momentum_60m": -0.25264027304582476,
+      "pre_volatility": 0.017785321329558026,
+      "volume_ratio": 0.4620663849319094,
+      "rsi": 34.67261904761692,
+      "price_range": 0.1074614143505052,
+      "trend_strength": -0.0006088465401734794,
+      "actual_direction": "Up",
+      "epoch_change_pct": 0.08005137898392913
     },
     {
-      "crypto": "SOL",
-      "epoch_start_ms": 1768446000000,
-      "epoch_dt": "2026-01-15 03:00 UTC",
-      "hour_of_day": 3,
-      "pre_momentum_1m": 0.027677830058117935,
-      "pre_momentum_5m": 0.07615091727242206,
-      "pre_momentum_15m": -0.14505767769566066,
-      "pre_momentum_60m": -0.427056068328974,
-      "pre_volatility": 0.061899184155164676,
-      "volume_ratio": 0.416400289582408,
-      "rsi": 39.13043478260882,
-      "price_range": 0.3597122302158147,
-      "trend_strength": 0.13143331488658838,
+      "crypto": "ETH",
+      "epoch_start_ms": 1768617900000,
+      "epoch_dt": "2026-01-17 02:45 UTC",
+      "hour_of_day": 2,
+      "pre_momentum_1m": 0.0212939415694188,
+      "pre_momentum_5m": 0.015209032948848981,
+      "pre_momentum_15m": 0.09498006027580416,
+      "pre_momentum_60m": -0.015508449063874078,
+      "pre_volatility": 0.020177670745888044,
+      "volume_ratio": 0.13908188893793988,
+      "rsi": 72.6114649681556,
+      "price_range": 0.1572374863899877,
+      "trend_strength": 0.01581498895996971,
       "actual_direction": "Up",
-      "epoch_change_pct": 0.03459489379368392
+      "epoch_change_pct": 0.14997018848179783
     },
     {
       "crypto": "SOL",
@@ -9859,38 +9825,38 @@
       "epoch_change_pct": -0.027710426047794973
     },
     {
-      "crypto": "XRP",
-      "epoch_start_ms": 1768445100000,
-      "epoch_dt": "2026-01-15 02:45 UTC",
+      "crypto": "SOL",
+      "epoch_start_ms": 1768617000000,
+      "epoch_dt": "2026-01-17 02:30 UTC",
       "hour_of_day": 2,
-      "pre_momentum_1m": -0.08994082840236747,
-      "pre_momentum_5m": -0.12776226754366954,
-      "pre_momentum_15m": -0.4856428874534384,
-      "pre_momentum_60m": -0.560659599528869,
-      "pre_volatility": 0.10231134845477928,
-      "volume_ratio": 0.7610766979734536,
-      "rsi": 26.56250000000024,
-      "price_range": 0.7959821851606144,
-      "trend_strength": -0.30560030323127485,
-      "actual_direction": "Down",
-      "epoch_change_pct": -0.29349112426034374
+      "pre_momentum_1m": -0.048483169414041544,
+      "pre_momentum_5m": 0.0,
+      "pre_momentum_15m": -0.027710426047794973,
+      "pre_momentum_60m": -0.24194663348541012,
+      "pre_volatility": 0.032816062070278686,
+      "volume_ratio": 0.6847220611342286,
+      "rsi": 39.21568627451166,
+      "price_range": 0.14552006097984058,
+      "trend_strength": -0.010394290069924005,
+      "actual_direction": "Up",
+      "epoch_change_pct": 0.09695962324261707
     },
     {
-      "crypto": "XRP",
-      "epoch_start_ms": 1768446000000,
-      "epoch_dt": "2026-01-15 03:00 UTC",
-      "hour_of_day": 3,
-      "pre_momentum_1m": 0.07126567844926154,
-      "pre_momentum_5m": 0.17120844628335224,
-      "pre_momentum_15m": -0.20373353548752718,
-      "pre_momentum_60m": -0.59933931099576,
-      "pre_volatility": 0.10592635394944985,
-      "volume_ratio": 0.7753360859744931,
-      "rsi": 38.725490196079306,
-      "price_range": 0.5554764278592919,
-      "trend_strength": 0.159046669515284,
+      "crypto": "SOL",
+      "epoch_start_ms": 1768617900000,
+      "epoch_dt": "2026-01-17 02:45 UTC",
+      "hour_of_day": 2,
+      "pre_momentum_1m": 0.04845632008860112,
+      "pre_momentum_5m": -0.006918500069178709,
+      "pre_momentum_15m": 0.15244958769315978,
+      "pre_momentum_60m": -0.08986589243743637,
+      "pre_volatility": 0.027766476150582857,
+      "volume_ratio": 0.8273155329643183,
+      "rsi": 74.46808510638195,
+      "price_range": 0.23524527779699955,
+      "trend_strength": 0.013837957517538475,
       "actual_direction": "Up",
-      "epoch_change_pct": 0.028506271379700396
+      "epoch_change_pct": 0.09690593202742076
     },
     {
       "crypto": "XRP",
@@ -13104,6 +13070,40 @@
       "trend_strength": 0.029090909090944493,
       "actual_direction": "Down",
       "epoch_change_pct": -0.01454968718173476
+    },
+    {
+      "crypto": "XRP",
+      "epoch_start_ms": 1768617000000,
+      "epoch_dt": "2026-01-17 02:30 UTC",
+      "hour_of_day": 2,
+      "pre_momentum_1m": -0.048482497818303785,
+      "pre_momentum_5m": 0.0,
+      "pre_momentum_15m": -0.04363636363636959,
+      "pre_momentum_60m": -0.32875652678399436,
+      "pre_volatility": 0.029928079907009342,
+      "volume_ratio": 0.3317166131125164,
+      "rsi": 44.615384615384194,
+      "price_range": 0.1164144353899971,
+      "trend_strength": -0.019402405898285593,
+      "actual_direction": "Down",
+      "epoch_change_pct": -0.12121212121211863
+    },
+    {
+      "crypto": "XRP",
+      "epoch_start_ms": 1768617900000,
+      "epoch_dt": "2026-01-17 02:45 UTC",
+      "hour_of_day": 2,
+      "pre_momentum_1m": 0.0,
+      "pre_momentum_5m": -0.024265954865332052,
+      "pre_momentum_15m": -0.07760962359331704,
+      "pre_momentum_60m": -0.2614505664762201,
+      "pre_volatility": 0.034616404202610515,
+      "volume_ratio": 0.6614511335125155,
+      "rsi": 42.4657534246567,
+      "price_range": 0.16019417475727468,
+      "trend_strength": -0.03883495145623404,
+      "actual_direction": "Up",
+      "epoch_change_pct": 0.13106796116504488
     }
   ]
 }
