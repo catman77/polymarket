@@ -567,6 +567,79 @@ def check_per_minute_magnitude(candles: List[Dict[str, Union[str, float]]], dire
     return (strong_count, weak_count)
 
 
+def calculate_magnitude_boost(candles: List[Dict[str, Union[str, float]]], direction: str) -> float:
+    """
+    Calculate accuracy boost based on move strength for a given direction.
+
+    Provides an accuracy boost (0.0 to MAGNITUDE_ACCURACY_BOOST) based on how far
+    the cumulative magnitude exceeds STRONG_MOVE_THRESHOLD. This rewards patterns
+    where the price moved decisively in one direction, which typically indicates
+    stronger momentum and higher probability of continuation.
+
+    Formula:
+        if total_magnitude <= STRONG_MOVE_THRESHOLD:
+            boost = 0.0
+        else:
+            excess = total_magnitude - STRONG_MOVE_THRESHOLD
+            boost = min(excess / STRONG_MOVE_THRESHOLD, 1.0) * MAGNITUDE_ACCURACY_BOOST
+
+    The boost scales linearly from 0% at STRONG_MOVE_THRESHOLD (1.5%) up to the
+    maximum boost at 2x STRONG_MOVE_THRESHOLD (3.0%). This means:
+        - 1.5% total move = 0% boost
+        - 2.0% total move = 1.0% boost (33% of max)
+        - 2.25% total move = 1.5% boost (50% of max)
+        - 3.0%+ total move = 3.0% boost (100% of max, capped)
+
+    Args:
+        candles: List of candle dicts from fetch_minute_candles(), each containing
+                 'direction' ('Up'/'Down'), 'change_pct' (float), and 'volume' (float)
+        direction: The pattern direction to check ("Up" or "Down")
+
+    Returns:
+        Float accuracy boost between 0.0 and MAGNITUDE_ACCURACY_BOOST (default 0.03)
+        Returns 0.0 if ENABLE_MAGNITUDE_TRACKING is False
+
+    Example:
+        >>> candles = [
+        ...     {"direction": "Down", "change_pct": -0.50, "volume": 100},  # 0.50%
+        ...     {"direction": "Down", "change_pct": -0.40, "volume": 150},  # 0.40%
+        ...     {"direction": "Up", "change_pct": 0.10, "volume": 80},      # ignored
+        ...     {"direction": "Down", "change_pct": -0.60, "volume": 120},  # 0.60%
+        ...     {"direction": "Down", "change_pct": -0.50, "volume": 110},  # 0.50%
+        ... ]
+        >>> # Total magnitude = 0.50 + 0.40 + 0.60 + 0.50 = 2.0%
+        >>> # Excess over 1.5% = 0.5%
+        >>> # Boost = (0.5% / 1.5%) * 3% = 1.0%
+        >>> calculate_magnitude_boost(candles, "Down")
+        0.01  # 1% accuracy boost
+    """
+    # Return 0.0 if feature disabled
+    if not ENABLE_MAGNITUDE_TRACKING:
+        return 0.0
+
+    # Calculate total magnitude for candles matching direction
+    total_magnitude = 0.0
+    for candle in candles:
+        if candle.get('direction') == direction:
+            # change_pct is in percent (e.g., -0.50 for -0.50%)
+            # Convert to decimal (e.g., 0.005 for 0.5%)
+            change_pct = candle.get('change_pct', 0.0)
+            if isinstance(change_pct, (int, float)):
+                total_magnitude += abs(change_pct) / 100.0
+
+    # No boost if below strong move threshold
+    if total_magnitude <= STRONG_MOVE_THRESHOLD:
+        return 0.0
+
+    # Calculate linear boost based on excess over threshold
+    # Boost scales from 0 at threshold to MAGNITUDE_ACCURACY_BOOST at 2x threshold
+    excess = total_magnitude - STRONG_MOVE_THRESHOLD
+    boost_ratio = min(excess / STRONG_MOVE_THRESHOLD, 1.0)  # Cap at 1.0
+    boost = boost_ratio * MAGNITUDE_ACCURACY_BOOST
+
+    return boost
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:

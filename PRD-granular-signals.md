@@ -84,14 +84,14 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need a function to boost pattern accuracy based on move strength.
 
 **Acceptance Criteria:**
-- [ ] Add `calculate_magnitude_boost(candles: List[dict], direction: str) -> float`
-- [ ] Returns accuracy boost (0.0 to `MAGNITUDE_ACCURACY_BOOST`)
-- [ ] Boost scales linearly with magnitude above `STRONG_MOVE_THRESHOLD`
-- [ ] No boost if magnitude below threshold
-- [ ] Max boost capped at `MAGNITUDE_ACCURACY_BOOST`
-- [ ] Returns 0.0 if feature disabled via config
-- [ ] Includes docstring with formula explanation
-- [ ] Typecheck passes
+- [x] Add `calculate_magnitude_boost(candles: List[dict], direction: str) -> float`
+- [x] Returns accuracy boost (0.0 to `MAGNITUDE_ACCURACY_BOOST`)
+- [x] Boost scales linearly with magnitude above `STRONG_MOVE_THRESHOLD`
+- [x] No boost if magnitude below threshold
+- [x] Max boost capped at `MAGNITUDE_ACCURACY_BOOST`
+- [x] Returns 0.0 if feature disabled via config
+- [x] Includes docstring with formula explanation
+- [x] Typecheck passes
 
 ---
 
