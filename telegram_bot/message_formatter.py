@@ -17,7 +17,13 @@ class MessageFormatter:
     """Formats trading data for Telegram messages."""
 
     def __init__(self):
-        self.wallet = os.getenv('POLYMARKET_WALLET', '0x52dF6Dc5DE31DD844d9E432A0821BC86924C2237')
+        # Security: No fallback wallet - must be configured
+        self.wallet = os.getenv('POLYMARKET_WALLET')
+        if not self.wallet:
+            raise ValueError(
+                "POLYMARKET_WALLET not configured. "
+                "Set it in .env file or environment variable."
+            )
         self.state_file = '/opt/polymarket-autotrader/state/trading_state.json'
         self.db_path = '/opt/polymarket-autotrader/simulation/trade_journal.db'
 

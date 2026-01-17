@@ -5,9 +5,15 @@ Quick Status - Single snapshot of bot status (no auto-refresh)
 import requests
 import json
 import os
+import sys
 from datetime import datetime, timezone
 
-WALLET = os.getenv("POLYMARKET_WALLET", "0x52dF6Dc5DE31DD844d9E432A0821BC86924C2237")
+# Security: No fallback wallet - must be configured
+WALLET = os.getenv("POLYMARKET_WALLET")
+if not WALLET:
+    print("❌ Error: POLYMARKET_WALLET environment variable not set")
+    print("Please configure your wallet address in .env file")
+    sys.exit(1)
 
 def get_usdc_balance():
     """Get USDC balance from blockchain."""

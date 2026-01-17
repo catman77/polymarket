@@ -239,22 +239,48 @@ except ImportError:
 # CONFIGURATION
 # =============================================================================
 
-# Wallet - from environment variables
-KEY = os.getenv('POLYMARKET_PRIVATE_KEY')
-EOA = os.getenv('POLYMARKET_WALLET')
+# Security: Import secure config and rate limiter
+try:
+    from utils.security import SecureConfig, sanitize_log, get_secure_logger, SecureConfigError
+    from utils.rate_limiter import rate_limited_request, RateLimitedSession, get_all_stats as get_rate_limit_stats
+    SECURITY_MODULE_AVAILABLE = True
+except ImportError:
+    SECURITY_MODULE_AVAILABLE = False
 
-# Validate required environment variables
-if not KEY or not EOA:
-    print("=" * 60)
-    print("ERROR: Missing required environment variables")
-    print("=" * 60)
-    print("Please set the following in your .env file:")
-    print("  POLYMARKET_WALLET=0xYourWalletAddress")
-    print("  POLYMARKET_PRIVATE_KEY=0xYourPrivateKey")
-    print()
-    print("See .env.example for template")
-    print("=" * 60)
-    sys.exit(1)
+# Wallet - from environment variables (with secure validation)
+if SECURITY_MODULE_AVAILABLE:
+    try:
+        _secure_config = SecureConfig()
+        KEY = _secure_config.get_private_key()
+        EOA = _secure_config.get_wallet()
+        log.info(f"✅ Secure config loaded: wallet={_secure_config}")
+    except SecureConfigError as e:
+        print("=" * 60)
+        print("ERROR: Secure configuration failed")
+        print("=" * 60)
+        print(str(e))
+        print()
+        print("Run: python scripts/setup.py to configure")
+        print("=" * 60)
+        sys.exit(1)
+else:
+    # Fallback to direct env vars (legacy mode)
+    KEY = os.getenv('POLYMARKET_PRIVATE_KEY')
+    EOA = os.getenv('POLYMARKET_WALLET')
+    
+    # Validate required environment variables
+    if not KEY or not EOA:
+        print("=" * 60)
+        print("ERROR: Missing required environment variables")
+        print("=" * 60)
+        print("Please set the following in your .env file:")
+        print("  POLYMARKET_WALLET=0xYourWalletAddress")
+        print("  POLYMARKET_PRIVATE_KEY=0xYourPrivateKey")
+        print()
+        print("See .env.example for template")
+        print("Or run: python scripts/setup.py")
+        print("=" * 60)
+        sys.exit(1)
 
 # =============================================================================
 # POSITION SIZING - FIX #1: Tiered percentage cap based on balance
@@ -1247,11 +1273,11 @@ class SignalAnalyzer:
 
 
 # =============================================================================
-# PRICE FEED (unchanged from v9)
+# PRICE FEED (with rate limiting)
 # =============================================================================
 
 class MultiExchangePriceFeed:
-    """Fetches prices from multiple exchanges."""
+    """Fetches prices from multiple exchanges with rate limiting."""
 
     def __init__(self, rsi_calculator: RSICalculator):
         self.executor = ThreadPoolExecutor(max_workers=12)
@@ -1259,31 +1285,61 @@ class MultiExchangePriceFeed:
         self.epoch_starts: Dict[str, Dict[int, Dict[str, float]]] = {}
         self.current_prices: Dict[str, Dict[str, float]] = {}
         self.price_stability: Dict[str, List[Tuple[float, float]]] = {c: [] for c in CRYPTOS}
+        
+        # Use rate-limited session if available
+        if SECURITY_MODULE_AVAILABLE:
+            self._session = RateLimitedSession()
+        else:
+            self._session = None
 
     def get_binance_price(self, symbol: str) -> Optional[float]:
         try:
-            resp = requests.get(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}", timeout=2)
+            if self._session:
+                resp = self._session.get(
+                    f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
+                    api='binance',
+                    timeout=2
+                )
+            else:
+                resp = requests.get(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}", timeout=2)
             return float(resp.json()["price"])
-        except:
+        except Exception as e:
+            log.debug(f"Binance price fetch failed: {e}")
             return None
 
     def get_kraken_price(self, symbol: str) -> Optional[float]:
         try:
-            resp = requests.get(f"https://api.kraken.com/0/public/Ticker?pair={symbol}", timeout=2)
+            if self._session:
+                resp = self._session.get(
+                    f"https://api.kraken.com/0/public/Ticker?pair={symbol}",
+                    api='kraken',
+                    timeout=2
+                )
+            else:
+                resp = requests.get(f"https://api.kraken.com/0/public/Ticker?pair={symbol}", timeout=2)
             data = resp.json()
             if data.get("error"):
                 return None
             for key, val in data.get("result", {}).items():
                 return float(val["c"][0])
             return None
-        except:
+        except Exception as e:
+            log.debug(f"Kraken price fetch failed: {e}")
             return None
 
     def get_coinbase_price(self, symbol: str) -> Optional[float]:
         try:
-            resp = requests.get(f"https://api.coinbase.com/v2/prices/{symbol}/spot", timeout=2)
+            if self._session:
+                resp = self._session.get(
+                    f"https://api.coinbase.com/v2/prices/{symbol}/spot",
+                    api='coinbase',
+                    timeout=2
+                )
+            else:
+                resp = requests.get(f"https://api.coinbase.com/v2/prices/{symbol}/spot", timeout=2)
             return float(resp.json()["data"]["amount"])
-        except:
+        except Exception as e:
+            log.debug(f"Coinbase price fetch failed: {e}")
             return None
 
     def update_prices(self, crypto: str):
