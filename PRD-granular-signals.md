@@ -114,14 +114,14 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need to detect when multiple exchanges agree on price direction.
 
 **Acceptance Criteria:**
-- [ ] Add class or module-level `epoch_start_prices: Dict[str, Dict[str, float]]` to track epoch starts
-- [ ] Add `record_epoch_start_prices(crypto: str, epoch: int, prices: Dict[str, float])`
-- [ ] Add `get_exchange_confluence(crypto: str, epoch: int) -> Tuple[Optional[str], int, float]`
-- [ ] Returns `(direction, agree_count, avg_change_pct)` or `(None, count, change)` if no consensus
-- [ ] Direction determined by comparing current prices to epoch start prices
-- [ ] Uses `MIN_EXCHANGES_AGREE` constant for threshold
-- [ ] Change threshold of 0.1% to count as Up/Down (not Flat)
-- [ ] Typecheck passes
+- [x] Add class or module-level `epoch_start_prices: Dict[str, Dict[str, float]]` to track epoch starts
+- [x] Add `record_epoch_start_prices(crypto: str, epoch: int, prices: Dict[str, float])`
+- [x] Add `get_exchange_confluence(crypto: str, epoch: int) -> Tuple[Optional[str], int, float]`
+- [x] Returns `(direction, agree_count, avg_change_pct)` or `(None, count, change)` if no consensus
+- [x] Direction determined by comparing current prices to epoch start prices
+- [x] Uses `MIN_EXCHANGES_AGREE` constant for threshold
+- [x] Change threshold of 0.1% to count as Up/Down (not Flat)
+- [x] Typecheck passes
 
 ---
 

@@ -792,6 +792,152 @@ def fetch_multi_exchange_prices(crypto: str) -> Dict[str, float]:
     return prices
 
 
+# =============================================================================
+# EXCHANGE CONFLUENCE DETECTION
+# =============================================================================
+
+# Module-level storage for epoch start prices
+# Structure: {crypto: {epoch: {"binance": price, "kraken": price, "coinbase": price}}}
+epoch_start_prices: Dict[str, Dict[int, Dict[str, float]]] = {}
+
+
+def record_epoch_start_prices(crypto: str, epoch: int, prices: Dict[str, float]) -> None:
+    """
+    Record exchange prices at the start of an epoch for confluence tracking.
+
+    Call this function when a new epoch is detected to capture baseline prices
+    that will be used for confluence comparison throughout the epoch.
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., 'BTC', 'ETH', 'SOL', 'XRP')
+        epoch: Epoch start timestamp (Unix seconds)
+        prices: Dict of exchange prices from fetch_multi_exchange_prices()
+
+    Example:
+        >>> prices = fetch_multi_exchange_prices('BTC')
+        >>> record_epoch_start_prices('BTC', 1737100200, prices)
+        >>> epoch_start_prices['BTC'][1737100200]
+        {'binance': 104523.50, 'kraken': 104521.00, 'coinbase': 104525.00}
+
+    Notes:
+        - Only stores if at least one exchange price is available
+        - Old epochs are NOT automatically cleaned up (future enhancement)
+        - Safe to call multiple times for same epoch (overwrites)
+    """
+    if not prices:
+        return
+
+    # Initialize crypto dict if needed
+    if crypto not in epoch_start_prices:
+        epoch_start_prices[crypto] = {}
+
+    # Store the prices for this epoch
+    epoch_start_prices[crypto][epoch] = prices.copy()
+
+
+def get_exchange_confluence(
+    crypto: str,
+    epoch: int
+) -> Tuple[Optional[str], int, float]:
+    """
+    Get exchange confluence direction by comparing current prices to epoch start.
+
+    Fetches current prices from all exchanges and compares to the recorded
+    epoch start prices. Returns the consensus direction (Up/Down), how many
+    exchanges agree, and the average percentage change.
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., 'BTC', 'ETH', 'SOL', 'XRP')
+        epoch: Epoch start timestamp (Unix seconds)
+
+    Returns:
+        Tuple of (direction, agree_count, avg_change_pct):
+        - direction: 'Up', 'Down', or None if no consensus
+        - agree_count: Number of exchanges showing same direction (0-3)
+        - avg_change_pct: Average percentage change across agreeing exchanges
+
+    Examples:
+        >>> get_exchange_confluence('BTC', 1737100200)
+        ('Down', 3, -0.45)  # All 3 exchanges agree: Down by 0.45%
+
+        >>> get_exchange_confluence('ETH', 1737100200)
+        ('Up', 2, 0.32)  # 2 of 3 agree: Up by 0.32%
+
+        >>> get_exchange_confluence('SOL', 1737100200)
+        (None, 1, 0.15)  # No consensus: only 1 exchange says Up
+
+    Notes:
+        - Change must exceed 0.1% to count as Up/Down (otherwise Flat)
+        - If no start prices recorded, returns (None, 0, 0.0)
+        - Uses MIN_EXCHANGES_AGREE config for threshold
+        - Fetches fresh prices on each call (not cached)
+    """
+    # Check if we have start prices for this epoch
+    if crypto not in epoch_start_prices:
+        return (None, 0, 0.0)
+    if epoch not in epoch_start_prices[crypto]:
+        return (None, 0, 0.0)
+
+    start_prices = epoch_start_prices[crypto][epoch]
+
+    # Fetch current prices from all exchanges
+    current_prices = fetch_multi_exchange_prices(crypto)
+    if not current_prices:
+        return (None, 0, 0.0)
+
+    # Calculate direction for each exchange
+    directions: Dict[str, Tuple[str, float]] = {}  # exchange -> (direction, change_pct)
+    change_threshold = 0.001  # 0.1% minimum change to count as Up/Down
+
+    for exchange, current_price in current_prices.items():
+        if exchange not in start_prices:
+            continue
+
+        start_price = start_prices[exchange]
+        if start_price <= 0:
+            continue
+
+        change_pct = (current_price - start_price) / start_price
+
+        if change_pct > change_threshold:
+            directions[exchange] = ('Up', change_pct)
+        elif change_pct < -change_threshold:
+            directions[exchange] = ('Down', change_pct)
+        else:
+            directions[exchange] = ('Flat', change_pct)
+
+    if not directions:
+        return (None, 0, 0.0)
+
+    # Count votes for each direction
+    up_count = sum(1 for d, _ in directions.values() if d == 'Up')
+    down_count = sum(1 for d, _ in directions.values() if d == 'Down')
+
+    # Calculate average change for winning direction
+    if up_count >= MIN_EXCHANGES_AGREE:
+        up_changes = [c for d, c in directions.values() if d == 'Up']
+        avg_change = sum(up_changes) / len(up_changes) if up_changes else 0.0
+        return ('Up', up_count, avg_change * 100)  # Convert to percentage
+    elif down_count >= MIN_EXCHANGES_AGREE:
+        down_changes = [c for d, c in directions.values() if d == 'Down']
+        avg_change = sum(down_changes) / len(down_changes) if down_changes else 0.0
+        return ('Down', down_count, avg_change * 100)  # Convert to percentage
+    else:
+        # No consensus - return the most popular direction even if below threshold
+        max_count = max(up_count, down_count)
+        if max_count > 0:
+            # Return direction with most votes even without consensus
+            if up_count > down_count:
+                up_changes = [c for d, c in directions.values() if d == 'Up']
+                avg_change = sum(up_changes) / len(up_changes) if up_changes else 0.0
+                return (None, up_count, avg_change * 100)
+            else:
+                down_changes = [c for d, c in directions.values() if d == 'Down']
+                avg_change = sum(down_changes) / len(down_changes) if down_changes else 0.0
+                return (None, down_count, avg_change * 100)
+        return (None, 0, 0.0)
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:
