@@ -993,11 +993,35 @@ def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
 # PATTERN DETECTION
 # =============================================================================
 
-def analyze_pattern(minutes: List[str]) -> Tuple[Optional[str], float, str]:
+def analyze_pattern(
+    minutes: List[str],
+    candles: Optional[List[Dict[str, Union[str, float]]]] = None
+) -> Tuple[Optional[str], float, str]:
     """
     Analyze minute patterns and return (direction, accuracy, reason).
 
-    Only returns signals for strong patterns (74%+ accuracy).
+    Only returns signals for strong patterns (74%+ accuracy). When candle data
+    is provided, applies magnitude checks and accuracy boosts based on move
+    strength.
+
+    Args:
+        minutes: List of direction strings ("Up" or "Down") for each minute
+        candles: Optional list of candle dicts with magnitude data. If provided,
+                 enables magnitude checks and accuracy boosts (US-GS-008).
+                 Each dict should have 'direction', 'change_pct', and 'volume'.
+
+    Returns:
+        Tuple of (direction, accuracy, reason) where:
+        - direction: "Up", "Down", or None if no strong pattern
+        - accuracy: Base accuracy (0.74-0.80) plus any magnitude boost
+        - reason: Human-readable explanation including magnitude info
+
+    Notes:
+        - Backward compatible: if candles not provided, behaves as before
+        - When ENABLE_MAGNITUDE_TRACKING is True and candles provided:
+          - Rejects patterns failing MIN_CUMULATIVE_MAGNITUDE check
+          - Adds accuracy boost for strong moves (up to MAGNITUDE_ACCURACY_BOOST)
+          - Includes magnitude info in reason string
     """
     if not minutes or len(minutes) < 3:
         return (None, 0.0, "Not enough data")
@@ -1009,19 +1033,73 @@ def analyze_pattern(minutes: List[str]) -> Tuple[Optional[str], float, str]:
         downs = 5 - ups
 
         if ups >= 4:
-            return ('Up', 0.797, f"{ups}/5 first minutes UP = 79.7% accuracy")
+            direction = 'Up'
+            base_accuracy = 0.797
+            base_reason = f"{ups}/5 UP"
         elif downs >= 4:
-            return ('Down', 0.740, f"{downs}/5 first minutes DOWN = 74.0% accuracy")
+            direction = 'Down'
+            base_accuracy = 0.740
+            base_reason = f"{downs}/5 DOWN"
+        else:
+            # No 4/5 pattern, check 3/3 below
+            direction = None
+            base_accuracy = 0.0
+            base_reason = ""
+    else:
+        direction = None
+        base_accuracy = 0.0
+        base_reason = ""
 
-    # Pattern 2: All first 3 minutes same direction
-    first_3 = minutes[:3]
-    if all(m == 'Up' for m in first_3):
-        return ('Up', 0.780, "All 3 first minutes UP = 78.0% accuracy")
-    elif all(m == 'Down' for m in first_3):
-        return ('Down', 0.739, "All 3 first minutes DOWN = 73.9% accuracy")
+    # Pattern 2: All first 3 minutes same direction (only if no 4/5 pattern)
+    if direction is None:
+        first_3 = minutes[:3]
+        if all(m == 'Up' for m in first_3):
+            direction = 'Up'
+            base_accuracy = 0.780
+            base_reason = "3/3 UP"
+        elif all(m == 'Down' for m in first_3):
+            direction = 'Down'
+            base_accuracy = 0.739
+            base_reason = "3/3 DOWN"
 
-    # No strong pattern
-    return (None, 0.0, "No strong pattern detected")
+    # No strong pattern found
+    if direction is None:
+        return (None, 0.0, "No strong pattern detected")
+
+    # === Magnitude Enhancement (US-GS-008) ===
+    # Only apply if candles provided and magnitude tracking enabled
+    if candles and ENABLE_MAGNITUDE_TRACKING:
+        # Check cumulative magnitude threshold
+        passes_magnitude, total_magnitude = check_cumulative_magnitude(candles, direction)
+        if not passes_magnitude:
+            magnitude_pct = total_magnitude * 100
+            return (
+                None,
+                0.0,
+                f"Pattern {base_reason} rejected: magnitude {magnitude_pct:.2f}% < {MIN_CUMULATIVE_MAGNITUDE * 100:.1f}% threshold"
+            )
+
+        # Get strong/weak move counts
+        strong_count, weak_count = check_per_minute_magnitude(candles, direction)
+
+        # Calculate accuracy boost
+        magnitude_boost = calculate_magnitude_boost(candles, direction)
+
+        # Final accuracy with boost
+        final_accuracy = base_accuracy + magnitude_boost
+
+        # Build enhanced reason string
+        magnitude_pct = total_magnitude * 100
+        boost_pct = magnitude_boost * 100
+        if magnitude_boost > 0:
+            reason = f"{base_reason} ({magnitude_pct:+.1f}%) [{strong_count}strong/{strong_count + weak_count}total] = {final_accuracy * 100:.1f}% (+{boost_pct:.1f}% boost)"
+        else:
+            reason = f"{base_reason} ({magnitude_pct:+.1f}%) = {base_accuracy * 100:.1f}%"
+
+        return (direction, final_accuracy, reason)
+
+    # No candles or magnitude tracking disabled - return base pattern
+    return (direction, base_accuracy, f"{base_reason} = {base_accuracy * 100:.1f}% accuracy")
 
 # =============================================================================
 # TRADING
@@ -1602,8 +1680,8 @@ def run_bot():
                     scan_results.append(f"{crypto}:no_data")
                     continue
 
-                # Analyze pattern
-                direction, accuracy, reason = analyze_pattern(minutes)
+                # Analyze pattern (pass candles for magnitude enhancement)
+                direction, accuracy, reason = analyze_pattern(minutes, candles)
 
                 # Skip weak patterns
                 if not direction or accuracy < MIN_PATTERN_ACCURACY:

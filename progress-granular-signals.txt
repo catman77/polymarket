@@ -84,3 +84,40 @@
   - Returns empty dict {} for invalid crypto symbols
   - EXCHANGE_SYMBOLS config at lines 114-119 maps crypto to exchange-specific symbols
 ---
+
+## Iteration 7 - US-GS-007: Add Exchange Confluence Detection
+- Added module-level epoch_start_prices dict to track prices at epoch start
+- Added record_epoch_start_prices(crypto, epoch, prices) to store baseline prices
+- Added get_exchange_confluence(crypto, epoch) -> Tuple[Optional[str], int, float]
+- Returns (direction, agree_count, avg_change_pct) based on consensus
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Functions added at lines 795-938, new "EXCHANGE CONFLUENCE DETECTION" section after fetch_multi_exchange_prices()
+  - epoch_start_prices structure: {crypto: {epoch: {exchange: price}}} for nested lookups
+  - Change threshold = 0.001 (0.1%) to count as Up/Down vs Flat
+  - Returns None direction when no consensus (even if some exchanges agree)
+  - avg_change_pct is returned as percentage (multiplied by 100)
+  - record_epoch_start_prices uses .copy() to prevent reference issues
+  - get_exchange_confluence fetches fresh prices each call (no caching)
+  - Uses MIN_EXCHANGES_AGREE config constant (default 2 of 3)
+---
+
+## Iteration 8 - US-GS-008: Integrate Magnitude Checks into Pattern Analysis
+- Modified analyze_pattern() to accept optional candles parameter
+- Integrated check_cumulative_magnitude() to reject patterns with weak magnitude (<0.8% total)
+- Integrated check_per_minute_magnitude() to count strong vs weak moves
+- Integrated calculate_magnitude_boost() to add accuracy boost for strong moves
+- Updated reason string format: "4/5 DOWN (+2.0%) [4strong/4total] = 75.0% (+1.0% boost)"
+- Updated main loop call site to pass candles to analyze_pattern()
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - analyze_pattern() is at line 996, now accepts (minutes, candles=None)
+  - Backward compatible: candles parameter is Optional with None default
+  - When magnitude tracking enabled and candles provided, 3 checks happen:
+    1. Cumulative magnitude check - rejects if total < MIN_CUMULATIVE_MAGNITUDE
+    2. Per-minute magnitude - counts strong/weak for logging
+    3. Magnitude boost - adds up to MAGNITUDE_ACCURACY_BOOST (0.03)
+  - Reason string includes: direction count, magnitude %, strong count, final accuracy, boost if any
+  - Main loop at line ~1684 now passes candles: analyze_pattern(minutes, candles)
+  - Test cases cover: backward compat, weak rejection, strong boost, moderate no-boost, no pattern
+---

@@ -129,13 +129,13 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need analyze_pattern to use magnitude data for better accuracy.
 
 **Acceptance Criteria:**
-- [ ] Modify `analyze_pattern()` to accept candle dicts (not just direction strings)
-- [ ] Call `check_cumulative_magnitude()` and reject if fails (when enabled)
-- [ ] Call `check_per_minute_magnitude()` to get strong/weak counts
-- [ ] Call `calculate_magnitude_boost()` and add to base accuracy
-- [ ] Update reason string to include magnitude info (e.g., "4/5 DOWN (-1.8%) = 77.0% accuracy")
-- [ ] Backward compatible: still works if passed direction strings only
-- [ ] Typecheck passes
+- [x] Modify `analyze_pattern()` to accept candle dicts (not just direction strings)
+- [x] Call `check_cumulative_magnitude()` and reject if fails (when enabled)
+- [x] Call `check_per_minute_magnitude()` to get strong/weak counts
+- [x] Call `calculate_magnitude_boost()` and add to base accuracy
+- [x] Update reason string to include magnitude info (e.g., "4/5 DOWN (-1.8%) = 77.0% accuracy")
+- [x] Backward compatible: still works if passed direction strings only
+- [x] Typecheck passes
 
 ---
 
