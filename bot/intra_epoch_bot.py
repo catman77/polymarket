@@ -294,22 +294,36 @@ def get_clob_client() -> Optional[ClobClient]:
     """Initialize CLOB client for trading."""
     try:
         private_key = os.getenv("POLYMARKET_PRIVATE_KEY")
+        wallet = os.getenv("POLYMARKET_WALLET")
+
         if not private_key:
             log.error("POLYMARKET_PRIVATE_KEY not set")
             return None
+        if not wallet:
+            log.error("POLYMARKET_WALLET not set")
+            return None
 
+        # First create client to derive API key
         client = ClobClient(
             host="https://clob.polymarket.com",
             chain_id=POLYGON,
             key=private_key,
-            signature_type=2,  # POLY_GNOSIS_SAFE
-            funder=os.getenv("POLYMARKET_WALLET")
+            signature_type=0,  # EOA wallet (not POLY_GNOSIS_SAFE)
+            funder=wallet
         )
 
         # Derive API credentials
-        client.set_api_creds(client.create_or_derive_api_creds())
+        creds = client.derive_api_key()
 
-        return client
+        # Create new client with credentials
+        return ClobClient(
+            host="https://clob.polymarket.com",
+            chain_id=POLYGON,
+            key=private_key,
+            signature_type=0,
+            funder=wallet,
+            creds=creds
+        )
 
     except Exception as e:
         log.error(f"Failed to initialize CLOB client: {e}")
