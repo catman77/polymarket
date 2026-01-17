@@ -831,16 +831,49 @@ def check_epoch_outcome(crypto: str, epoch_start: int) -> Optional[str]:
         return None
 
 
+def get_redeemable_value() -> float:
+    """Get total value of redeemable positions from API."""
+    try:
+        wallet = os.getenv("POLYMARKET_WALLET")
+        if not wallet:
+            return 0.0
+
+        resp = requests.get(
+            "https://data-api.polymarket.com/positions",
+            params={"user": wallet, "redeemable": "true", "limit": 50},
+            timeout=10
+        )
+
+        if resp.status_code != 200:
+            return 0.0
+
+        positions = resp.json()
+        total = 0.0
+        for pos in positions:
+            size = float(pos.get('size', 0))
+            total += size  # Redeemable positions are worth $1 per share
+
+        return total
+
+    except Exception as e:
+        log.warning(f"Failed to get redeemable value: {e}")
+        return 0.0
+
+
 def check_risk_limits(state: BotState) -> bool:
     """Check if we should continue trading."""
-    # Check drawdown
+    # Get effective balance (cash + redeemable positions)
+    redeemable = get_redeemable_value()
+    effective_balance = state.current_balance + redeemable
+
+    # Check drawdown using effective balance
     if state.peak_balance > 0:
-        drawdown = (state.peak_balance - state.current_balance) / state.peak_balance
+        drawdown = (state.peak_balance - effective_balance) / state.peak_balance
         if drawdown >= MAX_DRAWDOWN_PCT:
             state.halted = True
             state.halt_reason = f"Drawdown {drawdown:.1%} exceeds {MAX_DRAWDOWN_PCT:.0%}"
-            log.error(f"HALTED: {state.halt_reason}")
-            notify_alert(f"Bot HALTED!\n{state.halt_reason}\nBalance: ${state.current_balance:.2f}")
+            log.error(f"HALTED: {state.halt_reason} (cash=${state.current_balance:.2f} + redeemable=${redeemable:.2f})")
+            notify_alert(f"Bot HALTED!\n{state.halt_reason}\nCash: ${state.current_balance:.2f}\nRedeemable: ${redeemable:.2f}")
             return False
 
     # Check daily loss
