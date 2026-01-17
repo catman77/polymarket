@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
-Intra-Epoch Momentum Dashboard
+Intra-Epoch Momentum Dashboard (with Granular Signals)
 
 Real-time visualization of 1-minute candle patterns within each 15-minute epoch.
 Shows momentum buildup and predicted outcome probability for BTC, ETH, SOL, XRP.
 Includes live Polymarket prices for Up/Down markets.
+
+ENHANCED FEATURES (Jan 17, 2026):
+- Shadow mode indicator (when running alongside live bot)
+- Multi-exchange confluence display (Binance, Kraken, Coinbase)
+- Magnitude tracking visualization
+- Granular signal comparison logging
+- Recent shadow trade display
 """
 
 import os
@@ -16,6 +23,7 @@ import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor
 
 # ANSI color codes
 RESET = "\033[0m"
@@ -27,6 +35,21 @@ YELLOW = "\033[93m"
 CYAN = "\033[96m"
 WHITE = "\033[97m"
 GOLD = "\033[38;5;220m"  # Gold/amber color for active trades
+MAGENTA = "\033[95m"
+BG_BLUE = "\033[44m"
+
+# Exchange symbols for multi-exchange confluence
+EXCHANGE_SYMBOLS = {
+    'BTC': {'binance': 'BTCUSDT', 'kraken': 'XBTUSD', 'coinbase': 'BTC-USD'},
+    'ETH': {'binance': 'ETHUSDT', 'kraken': 'ETHUSD', 'coinbase': 'ETH-USD'},
+    'SOL': {'binance': 'SOLUSDT', 'kraken': 'SOLUSD', 'coinbase': 'SOL-USD'},
+    'XRP': {'binance': 'XRPUSDT', 'kraken': 'XRPUSD', 'coinbase': 'XRP-USD'},
+}
+
+# File paths
+BASE_PATH = Path(__file__).parent.parent
+INTRA_LOG = BASE_PATH / "intra_epoch_bot.log"
+GRANULAR_LOG = BASE_PATH / "granular_signals.log"
 
 
 def strip_ansi(text: str) -> str:
@@ -72,6 +95,178 @@ def get_current_epoch() -> Tuple[int, int]:
     return epoch_start, time_in_epoch
 
 
+def is_shadow_mode_active() -> bool:
+    """Check if intra-epoch bot is running in shadow mode."""
+    try:
+        if INTRA_LOG.exists():
+            with open(INTRA_LOG, 'r') as f:
+                lines = f.readlines()[-100:]
+                for line in reversed(lines):
+                    if 'SHADOW MODE' in line:
+                        return True
+                    if 'INTRA-EPOCH MOMENTUM BOT STARTING' in line and 'SHADOW' not in line:
+                        return False
+    except Exception:
+        pass
+    return False
+
+
+def fetch_exchange_price(exchange: str, symbol: str) -> Optional[float]:
+    """Fetch price from a specific exchange."""
+    try:
+        if exchange == 'binance':
+            resp = requests.get(
+                'https://api.binance.com/api/v3/ticker/price',
+                params={'symbol': symbol},
+                timeout=2
+            )
+            if resp.status_code == 200:
+                return float(resp.json()['price'])
+        elif exchange == 'kraken':
+            kraken_map = {'XBTUSD': 'XXBTZUSD', 'ETHUSD': 'XETHZUSD', 'SOLUSD': 'SOLUSD', 'XRPUSD': 'XXRPZUSD'}
+            pair = kraken_map.get(symbol, symbol)
+            resp = requests.get('https://api.kraken.com/0/public/Ticker', params={'pair': pair}, timeout=2)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get('result'):
+                    key = list(data['result'].keys())[0]
+                    return float(data['result'][key]['c'][0])
+        elif exchange == 'coinbase':
+            resp = requests.get(f'https://api.coinbase.com/v2/prices/{symbol}/spot', timeout=2)
+            if resp.status_code == 200:
+                return float(resp.json()['data']['amount'])
+    except Exception:
+        pass
+    return None
+
+
+def get_multi_exchange_prices(crypto: str) -> Dict[str, Optional[float]]:
+    """Fetch prices from all exchanges for a crypto in parallel."""
+    symbols = EXCHANGE_SYMBOLS.get(crypto, {})
+    prices = {}
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            'binance': executor.submit(fetch_exchange_price, 'binance', symbols.get('binance', '')),
+            'kraken': executor.submit(fetch_exchange_price, 'kraken', symbols.get('kraken', '')),
+            'coinbase': executor.submit(fetch_exchange_price, 'coinbase', symbols.get('coinbase', '')),
+        }
+        for name, future in futures.items():
+            try:
+                prices[name] = future.result(timeout=3)
+            except Exception:
+                prices[name] = None
+
+    return prices
+
+
+def get_exchange_confluence(crypto: str, epoch_start_prices: Dict[str, float]) -> Dict:
+    """
+    Check if multiple exchanges agree on direction from epoch start.
+    Returns confluence data including direction agreement.
+    """
+    current_prices = get_multi_exchange_prices(crypto)
+
+    directions = {}
+    for exchange, current in current_prices.items():
+        start = epoch_start_prices.get(exchange)
+        if current and start:
+            if current > start:
+                directions[exchange] = 'Up'
+            elif current < start:
+                directions[exchange] = 'Down'
+            else:
+                directions[exchange] = 'Flat'
+
+    # Count agreement
+    up_count = sum(1 for d in directions.values() if d == 'Up')
+    down_count = sum(1 for d in directions.values() if d == 'Down')
+
+    if up_count >= 2:
+        consensus = 'Up'
+        agreement = up_count
+    elif down_count >= 2:
+        consensus = 'Down'
+        agreement = down_count
+    else:
+        consensus = None
+        agreement = max(up_count, down_count)
+
+    return {
+        'prices': current_prices,
+        'directions': directions,
+        'consensus': consensus,
+        'agreement': agreement,
+        'total': len([d for d in directions.values() if d])
+    }
+
+
+def get_recent_shadow_trades(limit: int = 5) -> List[str]:
+    """Get recent shadow trade entries from log."""
+    trades = []
+    try:
+        if INTRA_LOG.exists():
+            with open(INTRA_LOG, 'r') as f:
+                lines = f.readlines()[-500:]
+                for line in reversed(lines):
+                    if '🔮 SHADOW ORDER' in line:
+                        # Extract just the relevant part
+                        parts = line.split('|')
+                        if len(parts) >= 3:
+                            trades.append(parts[-1].strip())
+                        else:
+                            trades.append(line.strip()[-60:])
+                        if len(trades) >= limit:
+                            break
+    except Exception:
+        pass
+    return list(reversed(trades))
+
+
+def get_recent_granular_signals(limit: int = 3) -> List[str]:
+    """Get recent granular signal comparison entries."""
+    signals = []
+    try:
+        if GRANULAR_LOG.exists():
+            with open(GRANULAR_LOG, 'r') as f:
+                lines = f.readlines()[-50:]
+                for line in reversed(lines):
+                    if '[GRANULAR]' in line:
+                        # Extract just the comparison part
+                        parts = line.split('[GRANULAR]')
+                        if len(parts) > 1:
+                            signals.append(parts[1].strip()[:70])
+                        if len(signals) >= limit:
+                            break
+    except Exception:
+        pass
+    return list(reversed(signals))
+
+
+def calculate_magnitude(minutes_data: List[dict]) -> Tuple[float, str]:
+    """
+    Calculate cumulative magnitude of price moves.
+    Returns (total_magnitude_pct, direction).
+    """
+    if not minutes_data:
+        return 0.0, 'Flat'
+
+    up_mag = 0.0
+    down_mag = 0.0
+
+    for m in minutes_data:
+        if not m.get('incomplete', False):
+            change_pct = abs(m.get('change_pct', 0))
+            if m.get('direction') == 'Up':
+                up_mag += change_pct
+            else:
+                down_mag += change_pct
+
+    net = up_mag - down_mag
+    direction = 'Up' if net > 0 else 'Down' if net < 0 else 'Flat'
+    return abs(net), direction
+
+
 def fetch_epoch_minutes(crypto: str, epoch_start: int) -> Optional[dict]:
     """Fetch 1-minute candles for the current epoch with price data."""
     try:
@@ -96,11 +291,23 @@ def fetch_epoch_minutes(crypto: str, epoch_start: int) -> Optional[dict]:
         epoch_start_price = float(klines[0][1])  # Open price of first candle
         current_price = float(klines[-1][4])      # Close price of last candle
 
+        total_up_mag = 0.0
+        total_down_mag = 0.0
+
         for k in klines[:-1]:  # Skip last (incomplete)
             open_p = float(k[1])
             close_p = float(k[4])
+            change_pct = ((close_p - open_p) / open_p) * 100 if open_p > 0 else 0
+            direction = 'Up' if close_p > open_p else 'Down'
+
+            if direction == 'Up':
+                total_up_mag += abs(change_pct)
+            else:
+                total_down_mag += abs(change_pct)
+
             minutes.append({
-                'direction': 'Up' if close_p > open_p else 'Down',
+                'direction': direction,
+                'change_pct': change_pct,
                 'incomplete': False
             })
 
@@ -109,17 +316,27 @@ def fetch_epoch_minutes(crypto: str, epoch_start: int) -> Optional[dict]:
             k = klines[-1]
             open_p = float(k[1])
             close_p = float(k[4])
+            change_pct = ((close_p - open_p) / open_p) * 100 if open_p > 0 else 0
             minutes.append({
                 'direction': 'Up' if close_p > open_p else 'Down',
+                'change_pct': change_pct,
                 'incomplete': True
             })
+
+        # Calculate net magnitude
+        net_magnitude = total_up_mag - total_down_mag
+        magnitude_direction = 'Up' if net_magnitude > 0 else 'Down' if net_magnitude < 0 else 'Flat'
 
         return {
             'minutes': minutes,
             'epoch_start_price': epoch_start_price,
             'current_price': current_price,
             'price_change': current_price - epoch_start_price,
-            'price_change_pct': ((current_price - epoch_start_price) / epoch_start_price) * 100
+            'price_change_pct': ((current_price - epoch_start_price) / epoch_start_price) * 100,
+            'total_up_magnitude': total_up_mag,
+            'total_down_magnitude': total_down_mag,
+            'net_magnitude': abs(net_magnitude),
+            'magnitude_direction': magnitude_direction
         }
     except Exception:
         return None
@@ -239,12 +456,20 @@ def render_crypto_panel(crypto: str, data: Optional[dict], time_in_epoch: int,
         current_price = data.get('current_price', 0)
         price_change = data.get('price_change', 0)
         price_change_pct = data.get('price_change_pct', 0)
+        net_magnitude = data.get('net_magnitude', 0)
+        magnitude_direction = data.get('magnitude_direction', 'Flat')
+        up_mag = data.get('total_up_magnitude', 0)
+        down_mag = data.get('total_down_magnitude', 0)
     else:
         minutes = []
         epoch_start_price = 0
         current_price = 0
         price_change = 0
         price_change_pct = 0
+        net_magnitude = 0
+        magnitude_direction = 'Flat'
+        up_mag = 0
+        down_mag = 0
 
     direction, probability, description = analyze_pattern(minutes)
     completed = [m for m in minutes if not m.get('incomplete', False)]
@@ -320,6 +545,18 @@ def render_crypto_panel(crypto: str, data: Optional[dict], time_in_epoch: int,
     count_line = f"Count: {GREEN}{ups}▲{RESET} {RED}{downs}▼{RESET}"
     lines.append(f"│ {pad_right(count_line, W-2)} │")
 
+    # Magnitude (granular signal enhancement)
+    if net_magnitude > 0:
+        mag_color = GREEN if magnitude_direction == 'Up' else RED if magnitude_direction == 'Down' else YELLOW
+        mag_arrow = '↑' if magnitude_direction == 'Up' else '↓' if magnitude_direction == 'Down' else '→'
+        # Show if magnitude is strong enough for boost (>0.8%)
+        if net_magnitude >= 0.8:
+            boost_indicator = f" {MAGENTA}+boost{RESET}"
+        else:
+            boost_indicator = ""
+        mag_line = f"Magnitude: {mag_color}{mag_arrow}{net_magnitude:.2f}%{RESET}{boost_indicator}"
+        lines.append(f"│ {pad_right(mag_line, W-2)} │")
+
     # Prediction
     if direction == 'Up':
         pred_line = f"Predict: {GREEN}{probability:.0%} UP{RESET}"
@@ -386,7 +623,7 @@ def render_crypto_panel(crypto: str, data: Optional[dict], time_in_epoch: int,
 
 
 def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
-                     epoch_start: int, time_in_epoch: int):
+                     epoch_start: int, time_in_epoch: int, shadow_mode: bool = False):
     """Render the full dashboard with prices."""
     clear_screen()
 
@@ -402,9 +639,16 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
     W = 80
     print()
     print(f"{CYAN}╔{'═' * (W-2)}╗{RESET}")
-    title = "INTRA-EPOCH MOMENTUM DASHBOARD"
-    title_pad = (W - 2 - len(title)) // 2
-    print(f"{CYAN}║{RESET}{' ' * title_pad}{BOLD}{title}{RESET}{' ' * (W - 2 - title_pad - len(title))}{CYAN}║{RESET}")
+
+    # Title with shadow mode indicator
+    if shadow_mode:
+        title = "🔮 INTRA-EPOCH DASHBOARD - SHADOW MODE 🔮"
+        title_color = MAGENTA
+    else:
+        title = "INTRA-EPOCH MOMENTUM DASHBOARD"
+        title_color = ""
+    title_pad = (W - 2 - len(title.replace('🔮', '  '))) // 2  # Account for emoji width
+    print(f"{CYAN}║{RESET}{' ' * title_pad}{title_color}{BOLD}{title}{RESET}{' ' * max(0, W - 2 - title_pad - len(title.replace('🔮', '  ')))}{CYAN}║{RESET}")
     print(f"{CYAN}╠{'═' * (W-2)}╣{RESET}")
 
     # Epoch line
@@ -447,11 +691,37 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
     for i in range(len(panels[2])):
         print(f"  {panels[2][i]}  {panels[3][i]}")
 
+    # Shadow trades section (if shadow mode active)
+    if shadow_mode:
+        shadow_trades = get_recent_shadow_trades(5)
+        if shadow_trades:
+            print()
+            print(f"  {MAGENTA}┌{'─' * 76}┐{RESET}")
+            print(f"  {MAGENTA}│{RESET} {BOLD}Recent Shadow Trades{RESET}{' ' * 55}{MAGENTA}│{RESET}")
+            print(f"  {MAGENTA}├{'─' * 76}┤{RESET}")
+            for trade in shadow_trades:
+                # Truncate if needed
+                display_trade = trade[:74] if len(trade) > 74 else trade
+                print(f"  {MAGENTA}│{RESET} {display_trade:<74} {MAGENTA}│{RESET}")
+            print(f"  {MAGENTA}└{'─' * 76}┘{RESET}")
+
+        # Granular signal comparison
+        granular_signals = get_recent_granular_signals(3)
+        if granular_signals:
+            print()
+            print(f"  {CYAN}┌{'─' * 76}┐{RESET}")
+            print(f"  {CYAN}│{RESET} {BOLD}Granular Signal Comparison (Old vs New){RESET}{' ' * 35}{CYAN}│{RESET}")
+            print(f"  {CYAN}├{'─' * 76}┤{RESET}")
+            for sig in granular_signals:
+                display_sig = sig[:74] if len(sig) > 74 else sig
+                print(f"  {CYAN}│{RESET} {display_sig:<74} {CYAN}│{RESET}")
+            print(f"  {CYAN}└{'─' * 76}┘{RESET}")
+
     # Legend
     print()
     print(f"  {DIM}Legend: {GREEN}▲{RESET}{DIM}=Up  {RED}▼{RESET}{DIM}=Down  ·=Pending  [▲]=Current  {GOLD}★{RESET}{DIM}=Active Trade{RESET}")
     print(f"  {DIM}Patterns: 4+/5 same = 74-80%  |  All 3 same = 74-78%  |  3/5 same = ~65%{RESET}")
-    print(f"  {DIM}Value: ★ ≤$0.25 | ● ≤$0.35 | ○ ≤$0.50 | ✗ >$0.50{RESET}")
+    print(f"  {DIM}Value: ★ ≤$0.25 | ● ≤$0.35 | ○ ≤$0.50 | ✗ >$0.50  |  {MAGENTA}+boost{RESET}{DIM} = magnitude ≥0.8%{RESET}")
     print()
     print(f"  {DIM}Refreshing every 5s. Press Ctrl+C to exit.{RESET}")
 
@@ -463,9 +733,17 @@ def main():
 
     cryptos = ['BTC', 'ETH', 'SOL', 'XRP']
 
+    # Check if shadow mode is active
+    shadow_mode = is_shadow_mode_active()
+    if shadow_mode:
+        print(f"{MAGENTA}🔮 Shadow mode detected - showing shadow trade data{RESET}\n")
+
     try:
         while True:
             epoch_start, time_in_epoch = get_current_epoch()
+
+            # Re-check shadow mode periodically (in case bot was started/stopped)
+            shadow_mode = is_shadow_mode_active()
 
             data = {}
             prices_data = {}
@@ -481,7 +759,7 @@ def main():
                 if prices:
                     prices_data[crypto] = prices
 
-            render_dashboard(data, prices_data, epoch_start, time_in_epoch)
+            render_dashboard(data, prices_data, epoch_start, time_in_epoch, shadow_mode)
             time.sleep(5)
 
     except KeyboardInterrupt:
