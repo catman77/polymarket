@@ -933,6 +933,16 @@ def run_bot():
                         state.save()
                         log.info(f"Balance updated after redemption: ${balance:.2f}")
 
+                        # Auto-unhalt if redemption fixed the drawdown
+                        if state.halted and state.peak_balance > 0:
+                            current_drawdown = (state.peak_balance - state.current_balance) / state.peak_balance
+                            if current_drawdown < MAX_DRAWDOWN_PCT:
+                                state.halted = False
+                                state.halt_reason = ""
+                                state.save()
+                                log.info(f"AUTO-RESUMED: Drawdown now {current_drawdown:.1%} (below {MAX_DRAWDOWN_PCT:.0%})")
+                                notify_alert(f"Bot AUTO-RESUMED after redemption!\nDrawdown: {current_drawdown:.1%}\nBalance: ${state.current_balance:.2f}")
+
             # Check if halted (but still allow redemptions above)
             if state.halted:
                 log.warning(f"Bot is HALTED: {state.halt_reason}")
