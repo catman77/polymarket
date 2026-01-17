@@ -52,21 +52,118 @@ def get_current_epoch_time():
     return time_in_epoch, time_remaining
 
 def get_bot_state():
-    """Read bot trading state."""
+    """Read bot trading state (tries intra_epoch first, then trading_state)."""
+    # Try intra-epoch bot state first (new bot)
     try:
-        # Bot now uses state/ directory (not v12_state/)
+        with open('/opt/polymarket-autotrader/state/intra_epoch_state.json', 'r') as f:
+            state = json.load(f)
+            state['bot_type'] = 'intra_epoch'
+            return state
+    except:
+        pass
+
+    # Fallback to old trading_state.json
+    try:
         with open('/opt/polymarket-autotrader/state/trading_state.json', 'r') as f:
-            return json.load(f)
+            state = json.load(f)
+            state['bot_type'] = 'ml_bot'
+            return state
     except:
         return None
 
-def get_ralph_state():
-    """Read Ralph regime state."""
-    try:
-        with open('/opt/polymarket-autotrader/.ralph_regime_state.json', 'r') as f:
-            return json.load(f)
-    except:
-        return None
+
+def get_intra_epoch_patterns():
+    """Fetch current intra-epoch momentum patterns for all cryptos."""
+    patterns = {}
+    epoch_start = (int(time.time()) // 900) * 900
+    time_in_epoch = int(time.time()) - epoch_start
+
+    for crypto in ['BTC', 'ETH', 'SOL', 'XRP']:
+        try:
+            # Fetch 1-minute candles
+            symbol = f"{crypto}USDT"
+            resp = requests.get(
+                'https://api.binance.com/api/v3/klines',
+                params={
+                    'symbol': symbol,
+                    'interval': '1m',
+                    'startTime': epoch_start * 1000,
+                    'limit': 15
+                },
+                timeout=5
+            )
+
+            if resp.status_code != 200:
+                continue
+
+            klines = resp.json()
+            minutes = []
+            for k in klines[:-1]:  # Skip incomplete
+                open_p = float(k[1])
+                close_p = float(k[4])
+                minutes.append('Up' if close_p > open_p else 'Down')
+
+            if len(minutes) < 3:
+                patterns[crypto] = {'signal': None, 'reason': 'Waiting...'}
+                continue
+
+            # Check patterns
+            ups = sum(1 for m in minutes if m == 'Up')
+            downs = len(minutes) - ups
+
+            # 4+ of first 5
+            if len(minutes) >= 5:
+                first_5 = minutes[:5]
+                ups_5 = sum(1 for m in first_5 if m == 'Up')
+                if ups_5 >= 4:
+                    patterns[crypto] = {
+                        'signal': 'Up',
+                        'accuracy': 79.7,
+                        'reason': f'{ups_5}/5 UP',
+                        'ups': ups,
+                        'downs': downs
+                    }
+                    continue
+                elif ups_5 <= 1:
+                    patterns[crypto] = {
+                        'signal': 'Down',
+                        'accuracy': 74.0,
+                        'reason': f'{5-ups_5}/5 DOWN',
+                        'ups': ups,
+                        'downs': downs
+                    }
+                    continue
+
+            # All 3 same
+            first_3 = minutes[:3]
+            if all(m == 'Up' for m in first_3):
+                patterns[crypto] = {
+                    'signal': 'Up',
+                    'accuracy': 78.0,
+                    'reason': '3/3 UP',
+                    'ups': ups,
+                    'downs': downs
+                }
+            elif all(m == 'Down' for m in first_3):
+                patterns[crypto] = {
+                    'signal': 'Down',
+                    'accuracy': 73.9,
+                    'reason': '3/3 DOWN',
+                    'ups': ups,
+                    'downs': downs
+                }
+            else:
+                patterns[crypto] = {
+                    'signal': None,
+                    'reason': 'Mixed',
+                    'ups': ups,
+                    'downs': downs
+                }
+
+        except:
+            patterns[crypto] = {'signal': None, 'reason': 'Error'}
+
+    return patterns, epoch_start, time_in_epoch
 
 def get_market_details(market_id):
     """Fetch market details from Gamma API."""
@@ -321,40 +418,63 @@ def render_dashboard():
     # Bot State
     bot_state = get_bot_state()
     if bot_state:
-        mode = bot_state.get('mode', 'unknown')
-        mode_emoji = "🟢" if mode == 'normal' else "🔴" if mode == 'halted' else "🟡"
-        
+        bot_type = bot_state.get('bot_type', 'unknown')
+        halted = bot_state.get('halted', False)
+        mode_emoji = "🔴" if halted else "🟢"
+
         current_balance = bot_state.get('current_balance', 0)
-        day_start = bot_state.get('day_start_balance', 0)
-        daily_pnl = current_balance - day_start
-        pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0
-        
-        print(f"{mode_emoji} Bot Mode: {mode.upper()}")
+        daily_pnl = bot_state.get('daily_pnl', 0)
+        total_trades = bot_state.get('total_trades', 0)
+        total_wins = bot_state.get('total_wins', 0)
+        total_losses = bot_state.get('total_losses', 0)
+        win_rate = (total_wins / total_trades * 100) if total_trades > 0 else 0
+
+        bot_name = "INTRA-EPOCH MOMENTUM" if bot_type == 'intra_epoch' else "ML BOT"
+        print(f"{mode_emoji} Bot: {bot_name} {'(HALTED)' if halted else '(ACTIVE)'}")
         print(f"💰 Balance: ${current_balance:.2f}")
-        print(f"📊 Daily P&L: ${daily_pnl:+.2f} ({pnl_pct:+.1f}%)")
-        
+        print(f"📊 Daily P&L: ${daily_pnl:+.2f}")
+        print(f"📈 Record: {total_wins}W/{total_losses}L ({win_rate:.1f}% win rate)")
+
         if bot_state.get('halt_reason'):
             print(f"⚠️  Halt Reason: {bot_state['halt_reason']}")
+
+        # Show active positions from bot state
+        positions = bot_state.get('positions', {})
+        if positions:
+            print(f"🎯 Bot Positions: {', '.join(positions.keys())}")
     else:
         print("⚠️  Could not read bot state")
-    
-    # Ralph State
-    ralph_state = get_ralph_state()
-    if ralph_state:
-        regime = ralph_state.get('regime', 'Unknown')
-        regime_emoji = "🐂" if regime == 'BULL' else "🐻" if regime == 'BEAR' else "⚡" if regime == 'VOLATILE' else "➡️"
-        
-        params = ralph_state.get('params', {})
-        strategy = params.get('strategy_focus', 'unknown')
-        
-        print(f"{regime_emoji} Market Regime: {regime}")
-        print(f"🎯 Strategy: {strategy}")
-        print(f"📏 Signal Strength: {params.get('MIN_SIGNAL_STRENGTH', 'N/A')}")
-        contrarian_max = params.get('CONTRARIAN_MAX_ENTRY', 'N/A')
-        if isinstance(contrarian_max, float):
-            print(f"💵 Contrarian Max: ${contrarian_max:.2f}")
+
+    # Intra-Epoch Momentum Patterns
+    patterns, epoch_start, time_in_epoch = get_intra_epoch_patterns()
+    window_active = 180 <= time_in_epoch <= 600
+
+    print()
+    print("📊 INTRA-EPOCH MOMENTUM (74-80% accuracy patterns)")
+    print("-" * 80)
+
+    pattern_line = ""
+    for crypto in ['BTC', 'ETH', 'SOL', 'XRP']:
+        p = patterns.get(crypto, {})
+        signal = p.get('signal')
+        reason = p.get('reason', '?')
+        accuracy = p.get('accuracy', 0)
+
+        if signal == 'Up':
+            emoji = "🟢"
+            pattern_line += f"{emoji} {crypto}:UP({reason}) "
+        elif signal == 'Down':
+            emoji = "🔴"
+            pattern_line += f"{emoji} {crypto}:DN({reason}) "
         else:
-            print(f"💵 Contrarian Max: {contrarian_max}")
+            emoji = "⚪"
+            ups = p.get('ups', 0)
+            downs = p.get('downs', 0)
+            pattern_line += f"{emoji} {crypto}:{ups}↑{downs}↓ "
+
+    print(f"  {pattern_line}")
+    window_status = "🟢 TRADING WINDOW ACTIVE" if window_active else "⏳ Window: min 3-10"
+    print(f"  {window_status} | Epoch min {time_in_epoch // 60}:{time_in_epoch % 60:02d}")
     
     # Blockchain Balance
     blockchain_balance = get_usdc_balance()
