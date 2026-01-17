@@ -250,10 +250,11 @@ except ImportError:
 # Wallet - from environment variables (with secure validation)
 if SECURITY_MODULE_AVAILABLE:
     try:
+        from utils.security import mask_address
         _secure_config = SecureConfig()
         KEY = _secure_config.get_private_key()
         EOA = _secure_config.get_wallet()
-        log.info(f"✅ Secure config loaded: wallet={_secure_config}")
+        print(f"✅ Secure config loaded: wallet={mask_address(EOA)}")
     except SecureConfigError as e:
         print("=" * 60)
         print("ERROR: Secure configuration failed")
