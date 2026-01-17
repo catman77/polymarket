@@ -71,12 +71,12 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need a function to check if individual minute moves are meaningful (not noise).
 
 **Acceptance Criteria:**
-- [ ] Add `check_per_minute_magnitude(candles: List[dict], direction: str) -> Tuple[int, int]`
-- [ ] Returns `(strong_count, weak_count)` for candles matching direction
-- [ ] "Strong" = magnitude >= `MIN_PER_MINUTE_MAGNITUDE`
-- [ ] Can be used to require "4 of 5 STRONG moves" vs just "4 of 5 moves"
-- [ ] Includes docstring with example
-- [ ] Typecheck passes
+- [x] Add `check_per_minute_magnitude(candles: List[dict], direction: str) -> Tuple[int, int]`
+- [x] Returns `(strong_count, weak_count)` for candles matching direction
+- [x] "Strong" = magnitude >= `MIN_PER_MINUTE_MAGNITUDE`
+- [x] Can be used to require "4 of 5 STRONG moves" vs just "4 of 5 moves"
+- [x] Includes docstring with example
+- [x] Typecheck passes
 
 ---
 

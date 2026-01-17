@@ -510,6 +510,63 @@ def check_cumulative_magnitude(candles: List[Dict[str, Union[str, float]]], dire
     return (passes, total_magnitude)
 
 
+def check_per_minute_magnitude(candles: List[Dict[str, Union[str, float]]], direction: str) -> Tuple[int, int]:
+    """
+    Check if individual minute moves are meaningful (not noise) for a given direction.
+
+    Analyzes each candle matching the specified direction and categorizes it as
+    "strong" or "weak" based on whether its magnitude meets MIN_PER_MINUTE_MAGNITUDE.
+    This helps distinguish between patterns with confident moves vs patterns with
+    marginal moves that could easily reverse.
+
+    Args:
+        candles: List of candle dicts from fetch_minute_candles(), each containing
+                 'direction' ('Up'/'Down'), 'change_pct' (float), and 'volume' (float)
+        direction: The pattern direction to check ("Up" or "Down")
+
+    Returns:
+        Tuple of (strong_count, weak_count) where:
+        - strong_count: Number of candles with magnitude >= MIN_PER_MINUTE_MAGNITUDE
+        - weak_count: Number of candles with magnitude < MIN_PER_MINUTE_MAGNITUDE
+
+    Example:
+        >>> candles = [
+        ...     {"direction": "Down", "change_pct": -0.25, "volume": 100},  # 0.25% = strong
+        ...     {"direction": "Down", "change_pct": -0.08, "volume": 150},  # 0.08% = weak
+        ...     {"direction": "Up", "change_pct": 0.10, "volume": 80},      # ignored (wrong dir)
+        ...     {"direction": "Down", "change_pct": -0.30, "volume": 120},  # 0.30% = strong
+        ... ]
+        >>> check_per_minute_magnitude(candles, "Down")
+        (2, 1)  # 2 strong, 1 weak
+
+    Notes:
+        - Can be used to require "4 of 5 STRONG moves" vs just "4 of 5 moves"
+        - MIN_PER_MINUTE_MAGNITUDE default is 0.002 (0.2% per minute)
+        - Only candles matching the direction are counted
+        - If ENABLE_MAGNITUDE_TRACKING is False, all moves are counted as strong
+    """
+    strong_count = 0
+    weak_count = 0
+
+    for candle in candles:
+        if candle.get('direction') == direction:
+            # change_pct is in percent (e.g., -0.25 for -0.25%)
+            # Convert to decimal (e.g., 0.0025 for 0.25%)
+            change_pct = candle.get('change_pct', 0.0)
+            if isinstance(change_pct, (int, float)):
+                magnitude = abs(change_pct) / 100.0
+
+                # If feature disabled, count all as strong
+                if not ENABLE_MAGNITUDE_TRACKING:
+                    strong_count += 1
+                elif magnitude >= MIN_PER_MINUTE_MAGNITUDE:
+                    strong_count += 1
+                else:
+                    weak_count += 1
+
+    return (strong_count, weak_count)
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:
