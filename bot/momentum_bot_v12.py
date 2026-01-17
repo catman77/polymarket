@@ -336,9 +336,9 @@ RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 RSI_HISTORY_SIZE = 50
 
-# Strategy: Early Momentum - FURTHER TIGHTENED in v12
+# Strategy: Early Momentum - USE CONFIG VALUES
 EARLY_MIN_ENTRY = 0.12              # v12: Slightly up from 0.10 - avoid extreme illiquidity
-EARLY_MAX_ENTRY = 0.30              # v12: Down from 0.40 - fee economics require this
+EARLY_MAX_ENTRY = agent_config.EARLY_MAX_ENTRY  # Use config value for dynamic updates
 EARLY_MIN_TIME = 15                 # v12: Back to 15s - let prices stabilize slightly
 EARLY_MAX_TIME = 300
 
@@ -353,7 +353,7 @@ EPOCH_BOUNDARY_MAX_ENTRY = 0.45     # v12: Reduced from 0.52 - still apply fee d
 CONTRARIAN_ENABLED = True
 CONTRARIAN_PRICE_THRESHOLD = 0.70   # When one side is >70%, consider fading
 CONTRARIAN_RSI_EXTREME = 60         # v12.1: Lower to catch current extremes
-CONTRARIAN_MAX_ENTRY = 0.20         # v12.1: Raised to catch $0.06-0.08 opportunities!
+CONTRARIAN_MAX_ENTRY = agent_config.SENTIMENT_CONTRARIAN_MAX_ENTRY  # Use config value
 CONTRARIAN_MIN_TIME = 30            # v12.1: Start very early to catch cheap prices
 CONTRARIAN_MAX_TIME = 700           # Extended to catch more opportunities
 
@@ -366,7 +366,7 @@ BOT_EXIT_WINDOW = 45                # Must happen within 45 seconds
 
 # Strategy: Late Confirmation
 LATE_MIN_ENTRY = 0.85               # Buy when probability is 85%+
-LATE_MAX_ENTRY = 0.95               # Cap at 95% (above this, profit too small)
+LATE_MAX_ENTRY = agent_config.LATE_MAX_ENTRY  # Use config value for dynamic updates
 LATE_MIN_TIME = 720                 # Start looking at 12 minutes (3 mins left)
 LATE_STABILITY_PERIOD = 180         # Direction must be stable for 3 minutes
 
@@ -2077,9 +2077,9 @@ def run_bot():
     log.info("MOMENTUM BOT v12.1 - FUTURE WINDOW ENHANCED + AGENT SYSTEM")
     log.info("=" * 60)
     log.info("v12 Core Improvements:")
-    log.info("  • Lower entry: Max $0.30 (fee economics)")
-    log.info("  • Stronger signals: 0.72 min strength")
-    log.info("  • Fixed contrarian: True fade logic")
+    log.info(f"  • Max entry: ${agent_config.MAX_ENTRY:.2f} (from config)")
+    log.info(f"  • Early max: ${agent_config.EARLY_MAX_ENTRY:.2f}")
+    log.info(f"  • Contrarian max: ${agent_config.SENTIMENT_CONTRARIAN_MAX_ENTRY:.2f}")
     log.info("  • Fallback bets: DISABLED")
     log.info("")
     log.info("v12.1 Future Window Trading:")
