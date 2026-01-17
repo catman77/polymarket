@@ -24,14 +24,22 @@ class MessageFormatter:
                 "POLYMARKET_WALLET not configured. "
                 "Set it in .env file or environment variable."
             )
-        self.state_file = '/opt/polymarket-autotrader/state/trading_state.json'
-        self.db_path = '/opt/polymarket-autotrader/simulation/trade_journal.db'
-
-        # Fallback to local paths if VPS paths don't exist
-        if not os.path.exists(self.state_file):
-            self.state_file = 'state/trading_state.json'
-        if not os.path.exists(self.db_path):
-            self.db_path = 'simulation/trade_journal.db'
+        
+        # State file path detection: Docker -> VPS -> local
+        state_paths = [
+            '/app/state/trading_state.json',  # Docker container
+            '/opt/polymarket-autotrader/state/trading_state.json',  # VPS
+            'state/trading_state.json',  # Local development
+        ]
+        self.state_file = next((p for p in state_paths if os.path.exists(p)), state_paths[-1])
+        
+        # Database path detection: Docker -> VPS -> local
+        db_paths = [
+            '/app/simulation/trade_journal.db',  # Docker container
+            '/opt/polymarket-autotrader/simulation/trade_journal.db',  # VPS
+            'simulation/trade_journal.db',  # Local development
+        ]
+        self.db_path = next((p for p in db_paths if os.path.exists(p)), db_paths[-1])
 
     def get_usdc_balance(self) -> Optional[float]:
         """Get current USDC balance from blockchain."""
