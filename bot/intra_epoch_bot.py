@@ -42,7 +42,7 @@ load_dotenv()
 
 # Trading parameters
 MAX_ENTRY_PRICE = 0.35          # Only enter if price ≤ this
-MIN_PATTERN_ACCURACY = 0.74     # Only trade 74%+ patterns
+MIN_PATTERN_ACCURACY = 0.735    # Only trade 73.5%+ patterns (includes all validated patterns)
 TRADING_WINDOW_START = 180      # Start trading at minute 3 (180 seconds)
 TRADING_WINDOW_END = 600        # Stop trading at minute 10 (600 seconds)
 
