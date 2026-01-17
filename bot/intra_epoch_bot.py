@@ -459,6 +459,57 @@ def get_directions_from_candles(candles: Optional[List[Dict[str, Union[str, floa
     return [c['direction'] for c in candles]
 
 
+def check_cumulative_magnitude(candles: List[Dict[str, Union[str, float]]], direction: str) -> Tuple[bool, float]:
+    """
+    Check if total price movement meets minimum threshold for a given direction.
+
+    Sums the magnitude (absolute change_pct / 100) of candles that match the specified
+    direction. This helps filter out weak signals where the price moved in the right
+    direction but the total magnitude was too small to be meaningful.
+
+    Args:
+        candles: List of candle dicts from fetch_minute_candles(), each containing
+                 'direction' ('Up'/'Down'), 'change_pct' (float), and 'volume' (float)
+        direction: The pattern direction to check ("Up" or "Down")
+
+    Returns:
+        Tuple of (passes_threshold, total_magnitude) where:
+        - passes_threshold: True if magnitude >= MIN_CUMULATIVE_MAGNITUDE or feature disabled
+        - total_magnitude: Sum of absolute change_pct / 100 for matching candles
+
+    Example:
+        >>> candles = [
+        ...     {"direction": "Down", "change_pct": -0.25, "volume": 100},
+        ...     {"direction": "Down", "change_pct": -0.35, "volume": 150},
+        ...     {"direction": "Up", "change_pct": 0.10, "volume": 80},
+        ...     {"direction": "Down", "change_pct": -0.30, "volume": 120},
+        ... ]
+        >>> check_cumulative_magnitude(candles, "Down")
+        (True, 0.009)  # 0.25 + 0.35 + 0.30 = 0.90% total = 0.009
+
+    Notes:
+        - Only candles matching the direction are summed (opposite direction ignored)
+        - Returns (True, magnitude) if ENABLE_MAGNITUDE_TRACKING is False
+        - Threshold defined by MIN_CUMULATIVE_MAGNITUDE (default 0.008 = 0.8%)
+    """
+    # If feature disabled, always pass
+    if not ENABLE_MAGNITUDE_TRACKING:
+        return (True, 0.0)
+
+    # Sum magnitude of candles matching the pattern direction
+    total_magnitude = 0.0
+    for candle in candles:
+        if candle.get('direction') == direction:
+            # change_pct is in percent (e.g., -0.25 for -0.25%)
+            # Convert to decimal (e.g., 0.0025 for 0.25%)
+            change_pct = candle.get('change_pct', 0.0)
+            if isinstance(change_pct, (int, float)):
+                total_magnitude += abs(change_pct) / 100.0
+
+    passes = total_magnitude >= MIN_CUMULATIVE_MAGNITUDE
+    return (passes, total_magnitude)
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:

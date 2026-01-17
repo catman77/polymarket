@@ -57,13 +57,13 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need a function to check if total price movement meets minimum threshold.
 
 **Acceptance Criteria:**
-- [ ] Add `check_cumulative_magnitude(candles: List[dict], direction: str) -> Tuple[bool, float]`
-- [ ] Sums magnitude of candles matching the pattern direction
-- [ ] Returns `(passes_threshold, total_magnitude)`
-- [ ] Uses `MIN_CUMULATIVE_MAGNITUDE` constant
-- [ ] Returns `(True, magnitude)` if disabled via config
-- [ ] Includes docstring with example
-- [ ] Typecheck passes
+- [x] Add `check_cumulative_magnitude(candles: List[dict], direction: str) -> Tuple[bool, float]`
+- [x] Sums magnitude of candles matching the pattern direction
+- [x] Returns `(passes_threshold, total_magnitude)`
+- [x] Uses `MIN_CUMULATIVE_MAGNITUDE` constant
+- [x] Returns `(True, magnitude)` if disabled via config
+- [x] Includes docstring with example
+- [x] Typecheck passes
 
 ---
 
