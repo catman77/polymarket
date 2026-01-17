@@ -38,7 +38,7 @@ class Track1Dashboard:
     TARGET_WIN_RATE = 0.58       # Target: WR >= 58%
     TARGET_MIN_TRADES = 4        # Target: at least 4 trades in 24h
     TARGET_MAX_TRADES = 10       # Expected: 4-10 trades/day with selective approach
-    CONSENSUS_THRESHOLD = 0.82   # Expected threshold
+    CONSENSUS_THRESHOLD = 0.55   # Achievable threshold with current agents (max ~0.60)
 
     def __init__(self, log_path: str = "bot.log", remote: bool = False):
         self.log_path = log_path

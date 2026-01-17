@@ -48,19 +48,23 @@ class AgentAccuracyAnalyzer:
             raise RuntimeError("Not connected to database")
         
         # Query: Join agent_votes with outcomes through trades
+        # Derive outcome from predicted_direction vs actual_direction
         query = """
-        SELECT 
+        SELECT
             av.agent_name,
             av.direction as vote_direction,
             av.confidence,
-            o.outcome,
+            CASE
+                WHEN o.predicted_direction = o.actual_direction THEN 'WIN'
+                ELSE 'LOSS'
+            END as outcome,
             t.direction as trade_direction,
             d.timestamp
         FROM agent_votes av
         JOIN decisions d ON av.decision_id = d.id
         JOIN trades t ON d.id = t.decision_id
         JOIN outcomes o ON t.id = o.trade_id
-        WHERE o.outcome IS NOT NULL
+        WHERE o.actual_direction IS NOT NULL
         ORDER BY d.timestamp DESC
         """
         

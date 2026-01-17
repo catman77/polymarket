@@ -13,9 +13,10 @@ Controls behavior of the multi-expert consensus trading system.
 AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log-only
 
 # Consensus requirements
-# US-TO-QUICK-001 (Jan 16, 2026): Keep high threshold while testing cheap entries
-CONSENSUS_THRESHOLD = 0.82     # Keep selective - only trade high consensus signals
-MIN_CONFIDENCE = 0.65          # Require 65% confidence minimum
+# US-TO-QUICK-001 (Jan 17, 2026): Achievable threshold with current agents
+# With RegimeAgent skipping, max possible score is ~0.60 from OrderBook+FundingRate+TimePattern
+CONSENSUS_THRESHOLD = 0.55     # Achievable with current agent setup
+MIN_CONFIDENCE = 0.50          # Require 50% confidence minimum
 MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vote_aggregator.py)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
@@ -289,9 +290,9 @@ DEPLOYMENT_MODES = {
     },
     'conservative': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.82,
-        'MIN_CONFIDENCE': 0.65,
-        'description': 'Higher threshold, more selective trades (US-RI-005 optimized)'
+        'CONSENSUS_THRESHOLD': 0.55,  # Lowered - 0.82 unreachable with current agents
+        'MIN_CONFIDENCE': 0.50,
+        'description': 'Selective trades with achievable threshold (max score ~0.60 with current agents)'
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
