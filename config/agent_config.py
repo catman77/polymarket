@@ -295,9 +295,9 @@ DEPLOYMENT_MODES = {
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.40,
+        'CONSENSUS_THRESHOLD': 0.55,
         'MIN_CONFIDENCE': 0.40,
-        'description': 'Balanced threshold (lowered to allow trading)'
+        'description': 'Data collection mode - 55% consensus, need 100+ trades to analyze'
     },
     'aggressive': {
         'AGENT_SYSTEM_ENABLED': True,
@@ -308,7 +308,8 @@ DEPLOYMENT_MODES = {
 }
 
 # Current deployment mode
-CURRENT_MODE = 'conservative'  # RAISED Jan 15 - reduce low-quality trades (0.75/0.60 thresholds)
+# Jan 17, 2026: Changed to 'moderate' for data collection - need 100+ trades to analyze
+CURRENT_MODE = 'moderate'  # Data collection mode (0.40/0.40 thresholds)
 
 
 def apply_mode(mode_name: str):
