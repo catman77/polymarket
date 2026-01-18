@@ -324,6 +324,8 @@ class AgentSystemWrapper:
         # Use weighted_score for position sizing if provided, otherwise use confidence
         # Weighted score represents the STRENGTH of consensus (quality × confidence × weight)
         signal_strength = weighted_score if weighted_score is not None else confidence
+        
+        log.debug(f"[PositionSize] balance=${balance:.2f}, confidence={confidence:.2f}, weighted={weighted_score}, signal={signal_strength:.2f}")
 
         # Apply confidence-based scaling:
         # - 0.10-0.20: 30% of normal size (very weak signal)
@@ -348,6 +350,8 @@ class AgentSystemWrapper:
             balance=balance,
             consecutive_losses=consecutive_losses
         )
+        
+        log.debug(f"[PositionSize] base_size=${base_size:.2f}, scale_multiplier={scale_multiplier}")
 
         # Apply confidence scaling
         scaled_size = base_size * scale_multiplier
@@ -360,9 +364,13 @@ class AgentSystemWrapper:
             # Otherwise, use minimum
             max_pct = 0.10 if balance < 75 else 0.05  # Tier-appropriate max
             if MIN_BET_USD <= (balance * max_pct):
+                log.debug(f"[PositionSize] scaled_size=${scaled_size:.2f} < MIN_BET, using MIN=${MIN_BET_USD}")
                 scaled_size = MIN_BET_USD
             else:
+                log.debug(f"[PositionSize] Can't afford minimum bet: ${MIN_BET_USD} > ${balance * max_pct:.2f} (balance * {max_pct})")
                 scaled_size = 0.0  # Can't afford minimum
+        
+        log.debug(f"[PositionSize] FINAL: ${scaled_size:.2f}")
 
         return scaled_size
 

@@ -1,6 +1,147 @@
 #!/usr/bin/env python3
 """
-Momentum Trading Bot v12.1 - FUTURE WINDOW ENHANCED EDITION
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    main()if __name__ == "__main__":        print("   Check if POLYMARKET_PROXY_WALLET is correct")        print("\n❌ ERROR: No balance detected!")    else:        print("\n✅ Balance is sufficient for trading")    elif total > 0:        print("   Trades require minimum $1.10")        print("\n⚠️ WARNING: Balance is very low!")    if total < 1.0:        print("=" * 60)    print(f"💰 TOTAL BALANCE: ${total:.2f}")    print("\n" + "=" * 60)    # Summary            total += proxy_usdc        print(f"    Native USDC: ${proxy_usdc:.2f}")        proxy_usdc = get_balance_for_address(proxy, NATIVE_USDC, "Native USDC")                total += proxy_usdc_e        print(f"    USDC.e: ${proxy_usdc_e:.2f}")        proxy_usdc_e = get_balance_for_address(proxy, USDC_ADDRESS, "USDC.e")        print(f"\n  Proxy Wallet ({proxy[:10]}...):")    if proxy and proxy.lower() != EOA.lower():    # Proxy balances        total += eoa_usdc    print(f"    Native USDC: ${eoa_usdc:.2f}")    eoa_usdc = get_balance_for_address(EOA, NATIVE_USDC, "Native USDC")        total += eoa_usdc_e    print(f"    USDC.e: ${eoa_usdc_e:.2f}")    eoa_usdc_e = get_balance_for_address(EOA, USDC_ADDRESS, "USDC.e")    print(f"\n  EOA Wallet ({EOA[:10]}...):")    # EOA balances        total = 0.0        print("\n📋 STEP 3: Balance Check")    # Step 3: Check balances            print("  Set POLYMARKET_PROXY_WALLET in .env to fix this")        print("  ⚠️ Could not determine proxy wallet!")    else:        print(f"  ✅ Proxy wallet: {proxy}")    if proxy:            proxy = get_proxy_from_api(EOA)        print("  POLYMARKET_PROXY_WALLET not set, trying API...")    if not proxy:    proxy = PROXY_WALLET        print("\n📋 STEP 2: Proxy Wallet Detection")    # Step 2: Try to get proxy wallet            return        print("\n❌ POLYMARKET_WALLET not set in .env")    if not EOA:        print(f"  PROXY_WALLET (POLYMARKET_PROXY_WALLET): {PROXY_WALLET or 'NOT SET'}")    print(f"  EOA (POLYMARKET_WALLET): {EOA or 'NOT SET'}")    print("\n📋 STEP 1: Environment Variables")    # Step 1: Check environment variables        print("=" * 60)    print("POLYMARKET BALANCE DETECTION TEST")    print("=" * 60)def main():    return ''            print(f"  ❌ API error: {e}")    except Exception as e:                        return data.get('proxyWalletAddress', '')            data = resp.json()        if resp.status_code == 200:        print(f"  CLOB API status: {resp.status_code}")        )            timeout=10            params={"user": eoa},            f"https://clob.polymarket.com/auth/proxy-wallet-address",        resp = requests.get(        # Try CLOB API                        return proxy            if proxy:            proxy = data.get('proxyWallet') or data.get('proxy_wallet')            data = resp.json()        if resp.status_code == 200:        print(f"  Gamma API status: {resp.status_code}")        )            timeout=10            f"https://gamma-api.polymarket.com/users/{eoa.lower()}",        resp = requests.get(        # Try Gamma API    try:    """Try to get proxy wallet from Polymarket API."""def get_proxy_from_api(eoa: str) -> str:        return 0.0        print(f"  ❌ Error getting {token_name} for {addr[:10]}...: {e}")    except Exception as e:        return balance        balance = int(balance_hex, 16) / 1e6        balance_hex = resp.json().get('result', '0x0')        }, timeout=10)            'id': 1            }, 'latest'],                'data': f'0x70a08231000000000000000000000000{addr[2:].lower()}'                'to': token,            'params': [{            'method': 'eth_call',            'jsonrpc': '2.0',        resp = requests.post(RPC_URL, json={    try:    """Get token balance for an address."""def get_balance_for_address(addr: str, token: str, token_name: str) -> float:NATIVE_USDC = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'  # Native USDCUSDC_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'  # USDC.e bridgedRPC_URL = 'https://polygon-rpc.com'PROXY_WALLET = os.getenv('POLYMARKET_PROXY_WALLET', '')EOA = os.getenv('POLYMARKET_WALLET', '')# Constantsload_dotenv()from dotenv import load_dotenvimport requestsimport os"""Run this to verify balance is correctly detected before trading.Test balance detection from Polymarket proxy wallet.Momentum Trading Bot v12.1 - FUTURE WINDOW ENHANCED EDITION
 
 Based on comprehensive audit by the "Hacker Team" (v2 analysis):
 
@@ -282,6 +423,10 @@ else:
         print("Or run: python scripts/setup.py")
         print("=" * 60)
         sys.exit(1)
+
+# Polymarket proxy wallet (where USDC is stored for trading)
+# This is created by Polymarket when you deposit - different from EOA
+PROXY_WALLET = os.getenv('POLYMARKET_PROXY_WALLET', '')
 
 # =============================================================================
 # POSITION SIZING - FIX #1: Tiered percentage cap based on balance
@@ -2052,21 +2197,125 @@ def validate_and_fix_state(state: TradingState, actual_balance: float) -> Tradin
     return state
 
 
-def get_usdc_balance() -> float:
+def get_polymarket_proxy_address(eoa_address: str) -> Optional[str]:
+    """
+    Get the Polymarket proxy wallet address for a given EOA.
+    Polymarket creates a proxy wallet for each user where USDC is stored.
+    
+    Priority:
+    1. Environment variable POLYMARKET_PROXY_WALLET (if set)
+    2. Polymarket Gamma API
+    3. Polymarket CLOB API
+    """
+    # 1. Check environment variable first (fastest, most reliable)
+    if PROXY_WALLET:
+        log.debug(f"Using proxy wallet from env: {PROXY_WALLET}")
+        return PROXY_WALLET
+    
+    log.debug(f"POLYMARKET_PROXY_WALLET not set, trying API...")
+    
     try:
-        resp = requests.post(RPC_URL, json={
-            'jsonrpc': '2.0',
-            'method': 'eth_call',
-            'params': [{
-                'to': USDC_ADDRESS,
-                'data': f'0x70a08231000000000000000000000000{EOA[2:]}'
-            }, 'latest'],
-            'id': 1
-        }, timeout=5)
-        balance_hex = resp.json().get('result', '0x0')
-        return int(balance_hex, 16) / 1e6
-    except:
-        return 0
+        # 2. Query Polymarket Gamma API for user's proxy address
+        resp = requests.get(
+            f"https://gamma-api.polymarket.com/users/{eoa_address.lower()}",
+            timeout=10
+        )
+        log.debug(f"Gamma API response: {resp.status_code}")
+        if resp.status_code == 200:
+            data = resp.json()
+            proxy = data.get('proxyWallet') or data.get('proxy_wallet')
+            if proxy:
+                log.debug(f"Got proxy from Gamma API: {proxy}")
+                return proxy
+        
+        # 3. Fallback: Try CLOB API
+        resp = requests.get(
+            f"https://clob.polymarket.com/auth/proxy-wallet-address",
+            params={"user": eoa_address},
+            timeout=10
+        )
+        log.debug(f"CLOB API response: {resp.status_code}")
+        if resp.status_code == 200:
+            data = resp.json()
+            proxy = data.get('proxyWalletAddress')
+            if proxy:
+                log.debug(f"Got proxy from CLOB API: {proxy}")
+                return proxy
+            
+    except Exception as e:
+        log.warning(f"Failed to get proxy address from API: {e}")
+    
+    return None
+
+
+def get_usdc_balance() -> float:
+    """
+    Get USDC balance from Polymarket proxy wallet.
+    
+    Polymarket architecture:
+    - EOA wallet (user's MetaMask/OKX): Used for signing
+    - Proxy wallet (created by Polymarket): Where USDC is stored
+    
+    We need to check BOTH because:
+    - EOA might have USDC that hasn't been deposited
+    - Proxy has the trading balance
+    """
+    try:
+        total_balance = 0.0
+        
+        # 1. Try to get proxy wallet address
+        proxy_address = get_polymarket_proxy_address(EOA)
+        
+        addresses_to_check = [EOA]
+        if proxy_address and proxy_address.lower() != EOA.lower():
+            addresses_to_check.append(proxy_address)
+            log.info(f"📍 Checking proxy wallet: {proxy_address}")
+        else:
+            log.warning(f"⚠️ No proxy wallet found! Set POLYMARKET_PROXY_WALLET env var")
+        
+        # 2. Check USDC balance on all addresses
+        for addr in addresses_to_check:
+            # Check USDC.e (bridged) - main Polymarket token
+            resp = requests.post(RPC_URL, json={
+                'jsonrpc': '2.0',
+                'method': 'eth_call',
+                'params': [{
+                    'to': USDC_ADDRESS,  # USDC.e bridged
+                    'data': f'0x70a08231000000000000000000000000{addr[2:].lower()}'
+                }, 'latest'],
+                'id': 1
+            }, timeout=5)
+            balance_hex = resp.json().get('result', '0x0')
+            balance = int(balance_hex, 16) / 1e6
+            total_balance += balance
+            
+            if balance > 0:
+                log.debug(f"USDC.e balance on {addr[:10]}...: ${balance:.2f}")
+        
+        # 3. Also check native USDC (in case user has it)
+        native_usdc = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+        for addr in addresses_to_check:
+            resp = requests.post(RPC_URL, json={
+                'jsonrpc': '2.0',
+                'method': 'eth_call',
+                'params': [{
+                    'to': native_usdc,
+                    'data': f'0x70a08231000000000000000000000000{addr[2:].lower()}'
+                }, 'latest'],
+                'id': 1
+            }, timeout=5)
+            balance_hex = resp.json().get('result', '0x0')
+            balance = int(balance_hex, 16) / 1e6
+            total_balance += balance
+            
+            if balance > 0:
+                log.debug(f"Native USDC balance on {addr[:10]}...: ${balance:.2f}")
+        
+        return total_balance
+        
+    except Exception as e:
+        log.warning(f"Failed to get USDC balance: {e}")
+        return 0.0
 
 
 def calculate_timing_bonus(time_in_epoch: int) -> float:
@@ -2719,7 +2968,7 @@ def run_bot():
                             # Calculate shares
                             shares = int(size / entry_price)
                             if shares < 1:
-                                log.warning(f"  [{crypto.upper()}] Size too small for 1 share")
+                                log.warning(f"  [{crypto.upper()}] Size too small for 1 share (size=${size:.2f}, price=${entry_price:.2f}, balance=${state.current_balance:.2f})")
                                 continue
 
                             # Log the trade details
@@ -2874,7 +3123,7 @@ def run_bot():
                         # Calculate shares
                             shares = int(size / entry_price)
                             if shares < 1:
-                                log.warning(f"  [{crypto.upper()}] Size too small for 1 share")
+                                log.warning(f"  [{crypto.upper()}] Size too small for 1 share (size=${size:.2f}, price=${entry_price:.2f}, balance=${state.current_balance:.2f})")
                                 continue
 
                         # Log the trade details

@@ -56,19 +56,19 @@ AGENT_WEIGHTS = {
 # - CandlestickAgent: 0% WR impact (Score 5.0 - REVIEW low value)
 # Kept: RegimeAgent (regime awareness), RiskAgent (essential), GamblerAgent (gating)
 AGENT_ENABLED = {
-    'TechAgent': False,  # DISABLED: 0% WR impact, 254 LOC burden (US-RI-003)
-    'SentimentAgent': False,  # DISABLED: 0% WR impact, 238 LOC burden (US-RI-003)
-    'RegimeAgent': True,  # KEPT: Regime-based weight adjustments
-    'CandlestickAgent': False,  # DISABLED: 0% WR impact, 154 LOC burden (US-RI-003)
-    'TimePatternAgent': True,  # KEPT: Shadow testing shows promise
-    'OrderBookAgent': True,  # KEPT: Phase 1 testing
-    'FundingRateAgent': True,  # KEPT: Phase 1 testing
+    'TechAgent': True,  # ENABLED: Technical analysis (multi-exchange confluence)
+    'SentimentAgent': True,  # ENABLED: Market sentiment analysis
+    'RegimeAgent': True,  # ENABLED: Regime-based weight adjustments
+    'CandlestickAgent': True,  # ENABLED: Candlestick pattern recognition
+    'TimePatternAgent': True,  # ENABLED: Time-based patterns
+    'OrderBookAgent': True,  # ENABLED: Order book analysis
+    'FundingRateAgent': True,  # ENABLED: Funding rate signals
     'OnChainAgent': False,  # Disabled: No API keys configured
     'SocialSentimentAgent': False,  # Disabled: No API keys configured
     'RiskAgent': True,  # ESSENTIAL: Position sizing and risk management
-    'GamblerAgent': True,  # KEPT: Probability gating (60% threshold)
-    'StreakAgent': True,  # NEW: Mean reversion after 3+ consecutive (data-validated pattern)
-    'IntraEpochMomentumAgent': True,  # HIGH PRIORITY: 74-80% accuracy (validated on 2,688 epochs)
+    'GamblerAgent': True,  # ENABLED: Probability gating (60% threshold)
+    'StreakAgent': True,  # ENABLED: Mean reversion after 3+ consecutive
+    'IntraEpochMomentumAgent': True,  # ENABLED: High accuracy momentum (74-80%)
 }
 
 def get_enabled_agents():
@@ -142,7 +142,7 @@ TECH_PRICE_WEIGHT = 0.15
 # EMERGENCY: Disable contrarian fading in trending markets
 # Contrarian strategy only works in choppy/volatile regimes, NOT trending markets
 # When False: SentimentAgent will skip voting (prevents counter-trend trades)
-ENABLE_CONTRARIAN_TRADES = False  # DISABLED: Bleeding funds - strategy not working (Jan 16, 2026 17:00 UTC)
+ENABLE_CONTRARIAN_TRADES = True  # ENABLED: Contrarian sentiment trading
 
 # Contrarian thresholds
 SENTIMENT_CONTRARIAN_PRICE_THRESHOLD = 0.70  # When one side >70%, consider fading

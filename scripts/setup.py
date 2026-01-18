@@ -19,10 +19,34 @@ import argparse
 import json
 import hashlib
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
+
+
+def generate_polymarket_api_keys(private_key: str) -> Tuple[str, str, str]:
+    """
+    Generate Polymarket API credentials from private key.
+    Uses py-clob-client to derive API key, secret, and passphrase.
+    
+    Returns:
+        Tuple of (api_key, api_secret, passphrase)
+    """
+    try:
+        from py_clob_client.client import ClobClient
+        
+        host = "https://clob.polymarket.com"
+        chain_id = 137  # Polygon mainnet
+        
+        client = ClobClient(host, key=private_key, chain_id=chain_id)
+        creds = client.derive_api_key()
+        
+        return creds.api_key, creds.api_secret, creds.api_passphrase
+    except ImportError:
+        raise RuntimeError("py-clob-client not installed. Run: pip install py-clob-client")
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate API keys: {e}")
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Colors for terminal output
@@ -207,6 +231,16 @@ POLYMARKET_WALLET={config['POLYMARKET_WALLET']}
 POLYMARKET_PRIVATE_KEY={config['POLYMARKET_PRIVATE_KEY']}
 
 # =============================================================================
+# REQUIRED: Polymarket API Credentials (auto-generated)
+# =============================================================================
+
+# API credentials for Polymarket CLOB (order book) API
+# These are derived from your private key and required for trading
+POLYMARKET_API_KEY={config.get('POLYMARKET_API_KEY', '')}
+POLYMARKET_API_SECRET={config.get('POLYMARKET_API_SECRET', '')}
+POLYMARKET_PASSPHRASE={config.get('POLYMARKET_PASSPHRASE', '')}
+
+# =============================================================================
 # OPTIONAL: Network Configuration
 # =============================================================================
 
@@ -305,6 +339,27 @@ def validate_existing_config() -> bool:
     else:
         key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
         print_success(f"Private key: [hash: {key_hash}...]")
+    
+    # Check Polymarket API credentials
+    api_key = os.getenv('POLYMARKET_API_KEY')
+    api_secret = os.getenv('POLYMARKET_API_SECRET')
+    passphrase = os.getenv('POLYMARKET_PASSPHRASE')
+    
+    if api_key and api_secret and passphrase:
+        print_success(f"Polymarket API Key: {api_key[:12]}...")
+        print_success(f"Polymarket API Secret: {api_secret[:12]}...")
+        print_success(f"Polymarket Passphrase: {passphrase[:12]}...")
+    else:
+        missing = []
+        if not api_key:
+            missing.append("POLYMARKET_API_KEY")
+        if not api_secret:
+            missing.append("POLYMARKET_API_SECRET")
+        if not passphrase:
+            missing.append("POLYMARKET_PASSPHRASE")
+        
+        errors.append(f"Missing Polymarket API credentials: {', '.join(missing)}")
+        print_warning("Run 'python scripts/setup.py' to auto-generate API credentials")
     
     # Check optional configs
     telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -420,6 +475,28 @@ def main():
     # Step 2: Private key
     print_header("Step 2: Private Key")
     config['POLYMARKET_PRIVATE_KEY'] = get_private_key()
+    
+    # Step 2.5: Generate Polymarket API credentials
+    print_header("Step 2.5: Polymarket API Credentials")
+    print_info("Generating API credentials from your private key...")
+    print("   This creates API access for the Polymarket CLOB (order book)")
+    print()
+    
+    try:
+        api_key, api_secret, passphrase = generate_polymarket_api_keys(config['POLYMARKET_PRIVATE_KEY'])
+        config['POLYMARKET_API_KEY'] = api_key
+        config['POLYMARKET_API_SECRET'] = api_secret
+        config['POLYMARKET_PASSPHRASE'] = passphrase
+        print_success(f"API Key: {api_key[:12]}...")
+        print_success(f"API Secret: {api_secret[:12]}...")
+        print_success(f"Passphrase: {passphrase[:12]}...")
+        print_success("API credentials generated successfully!")
+    except Exception as e:
+        print_error(f"Failed to generate API credentials: {e}")
+        print_warning("You can manually add API credentials to .env later")
+        config['POLYMARKET_API_KEY'] = ''
+        config['POLYMARKET_API_SECRET'] = ''
+        config['POLYMARKET_PASSPHRASE'] = ''
     
     # Step 3: Telegram (optional)
     print_header("Step 3: Telegram (Optional)")
