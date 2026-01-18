@@ -295,20 +295,20 @@ DEPLOYMENT_MODES = {
     },
     'conservative': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.50,  # Observed score 0.505 - lowered from 0.55 to allow trades
-        'MIN_CONFIDENCE': 0.50,
-        'description': 'Selective trades with achievable threshold (observed score ~0.505)'
+        'CONSENSUS_THRESHOLD': 0.30,  # Lowered: agents produce max ~0.3-0.4 scores
+        'MIN_CONFIDENCE': 0.30,
+        'description': 'Achievable threshold for current agent configuration'
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.50,
-        'MIN_CONFIDENCE': 0.35,
-        'description': 'Data collection mode - 50% consensus, need 100+ trades to analyze'
+        'CONSENSUS_THRESHOLD': 0.25,
+        'MIN_CONFIDENCE': 0.25,
+        'description': 'Data collection mode - more trades to analyze'
     },
     'aggressive': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.45,  # Lower than conservative for more trades
-        'MIN_CONFIDENCE': 0.45,
+        'CONSENSUS_THRESHOLD': 0.20,  # Very low threshold, many trades
+        'MIN_CONFIDENCE': 0.20,
         'description': 'Lower threshold, more trades (higher risk)'
     }
 }
